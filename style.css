@@ -32,6 +32,67 @@ h1, h2, h3 {
     font-family: 'Outfit', sans-serif;
 }
 
+/* Digital Clock Styles */
+.nav-extra {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.digital-clock {
+    padding: 0.5rem 1rem;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--primary);
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+    letter-spacing: 0.05em;
+    min-width: 100px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Search Suggestions */
+.search-container {
+    position: relative;
+    width: 100%;
+}
+
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 0 0 12px 12px;
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+}
+
+.search-results.show {
+    display: block;
+}
+
+.search-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.search-item:hover {
+    background: rgba(59, 130, 246, 0.2);
+    color: white;
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;

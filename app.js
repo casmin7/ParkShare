@@ -42,9 +42,12 @@ const defaultSpots = [
     }
 ];
 
+// Shared Persistence Configuration
+const DB_URL = "https://kvdb.io/J7qWx2XG6v8kF6XG6v8kF6/spots"; // Randomly generated bucket ID for this session
+
 // App State
 let appState = {
-    spots: JSON.parse(localStorage.getItem('parkshare_spots')) || defaultSpots,
+    spots: defaultSpots,
     selectedCoord: null,
     tempMarker: null
 };
@@ -52,9 +55,56 @@ let appState = {
 let map;
 let spotLayers = [];
 
-// Helper to save state
-function saveState() {
+// Fetch spots from global store
+async function loadState() {
+    try {
+        const response = await fetch(DB_URL);
+        if (response.ok) {
+            const data = await response.json();
+            if (Array.isArray(data)) {
+                appState.spots = data;
+                console.log("Global state loaded:", data);
+            }
+        }
+    } catch (err) {
+        console.warn("Failed to load global state, using local defaults.", err);
+        // Fallback to localStorage if available
+        const local = localStorage.getItem('parkshare_spots');
+        if (local) appState.spots = JSON.parse(local);
+    }
+}
+
+// Save spots to global store
+async function saveState() {
+    // Save to localStorage as backup
     localStorage.setItem('parkshare_spots', JSON.stringify(appState.spots));
+    
+    try {
+        await fetch(DB_URL, {
+            method: 'POST',
+            body: JSON.stringify(appState.spots)
+        });
+        console.log("Global state saved.");
+    } catch (err) {
+        console.error("Failed to save global state.", err);
+    }
+}
+
+// Initialize Military Clock
+function startClock() {
+    const clockEl = document.getElementById('digitalClock');
+    if (!clockEl) return;
+    
+    setInterval(() => {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('en-GB', { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit',
+            hour12: false 
+        });
+        clockEl.textContent = timeStr;
+    }, 1000);
 }
 
 // Function to initialize the map
@@ -68,7 +118,7 @@ function initMap() {
     renderOverlays(appState.spots);
 
     // Click on map to select listing location
-    map.on('click', (e) => {
+    map.on('click', async (e) => {
         if (appState.tempMarker) {
             map.removeLayer(appState.tempMarker);
         }
@@ -84,7 +134,21 @@ function initMap() {
             })
         }).addTo(map);
 
-        showToast("Location selected! Now fill out the form below.");
+        showToast("Location selected! Reverse geocoding address...");
+        
+        // Reverse Geocoding
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}`);
+            const data = await res.json();
+            if (data && data.display_name) {
+                // Shorten address (usually it's very long)
+                const shortAddress = data.display_name.split(',').slice(0, 3).join(',');
+                document.getElementById('address').value = shortAddress;
+                showToast("Address automatically filled!");
+            }
+        } catch (err) {
+            console.warn("Reverse geocoding failed", err);
+        }
         
         // Scroll to form
         document.getElementById('list').scrollIntoView({ behavior: 'smooth' });
@@ -263,7 +327,62 @@ window.addEventListener('scroll', () => {
     }
 });
 
+// Geocoding Search Logic
+function initGeocoding() {
+    const searchInput = document.getElementById('mapSearch');
+    const resultsEl = document.getElementById('searchResults');
+    let timeout;
+
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(timeout);
+        const query = e.target.value;
+        if (query.length < 3) {
+            resultsEl.classList.remove('show');
+            return;
+        }
+
+        timeout = setTimeout(async () => {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + " Bucharest")}&limit=5`);
+                const data = await res.json();
+                
+                resultsEl.innerHTML = '';
+                if (data.length > 0) {
+                    data.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'search-item';
+                        div.textContent = item.display_name.split(',').slice(0, 3).join(',');
+                        div.onclick = () => {
+                            const lat = parseFloat(item.lat);
+                            const lon = parseFloat(item.lon);
+                            map.flyTo([lat, lon], 16);
+                            resultsEl.classList.remove('show');
+                            searchInput.value = div.textContent;
+                        };
+                        resultsEl.appendChild(div);
+                    });
+                    resultsEl.classList.add('show');
+                } else {
+                    resultsEl.classList.remove('show');
+                }
+            } catch (err) {
+                console.error("Geocoding failed", err);
+            }
+        }, 500);
+    });
+
+    // Close results when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target)) {
+            resultsEl.classList.remove('show');
+        }
+    });
+}
+
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    startClock();
+    await loadState(); // Load global state first
     initMap();
+    initGeocoding();
 });
