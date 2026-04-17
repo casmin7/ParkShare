@@ -43,29 +43,39 @@ const defaultSpots = [
 ];
 
 // Shared Persistence Configuration
-const DB_URL = "https://kvdb.io/J7qWx2XG6v8kF6XG6v8kF6/spots"; // Randomly generated bucket ID for this session
+const DB_URL = "https://kvdb.io/77TAwJmXQUH7pgjBJgGx1x/spots"; // Live bucket for everyone
 
 // App State
 let appState = {
     spots: defaultSpots,
     selectedCoord: null,
-    tempMarker: null
+    tempMarker: null,
+    tempMarkerList: null
 };
 
 let map;
+let mapList;
 let spotLayers = [];
+let spotLayersList = [];
 
 // Fetch spots from global store
 async function loadState() {
     try {
         const response = await fetch(DB_URL);
         if (response.ok) {
-            const data = await response.json();
-            if (Array.isArray(data)) {
-                appState.spots = data;
-                console.log("Global state loaded:", data);
+            const text = await response.text();
+            if (text) {
+                const data = JSON.parse(text);
+                if (Array.isArray(data)) {
+                    appState.spots = data;
+                    console.log("Global state loaded:", data);
+                    return;
+                }
             }
         }
+        // Initialize if empty
+        console.log("Initializing global state with defaults...");
+        await saveState();
     } catch (err) {
         console.warn("Failed to load global state, using local defaults.", err);
         // Fallback to localStorage if available
@@ -109,30 +119,193 @@ function startClock() {
 
 // Function to initialize the map
 function initMap() {
-    map = L.map('map').setView([44.435, 26.102], 13);
+    map = L.map('map', {
+        scrollWheelZoom: true,
+        maxZoom: 22
+    }).setView([44.435, 26.102], 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
+        attribution: '© OpenStreetMap contributors',
+        maxNativeZoom: 19,
+        maxZoom: 22
     }).addTo(map);
+
+    mapList = L.map('map-list', {
+        scrollWheelZoom: true,
+        maxZoom: 22
+    }).setView([44.435, 26.102], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxNativeZoom: 19,
+        maxZoom: 22
+    }).addTo(mapList);
+
+    // Sync views
+    let isSyncingLeft = false;
+    let isSyncingRight = false;
+    
+    map.on('move', function() {
+        if (!isSyncingLeft) {
+            isSyncingRight = true;
+            mapList.setView(map.getCenter(), map.getZoom(), {animate: false});
+            isSyncingRight = false;
+        }
+    });
+
+    mapList.on('move', function() {
+        if (!isSyncingRight) {
+            isSyncingLeft = true;
+            map.setView(mapList.getCenter(), mapList.getZoom(), {animate: false});
+            isSyncingLeft = false;
+        }
+    });
+
+    // --- LEAFLET DRAW PLUGIN (USER MANUAL PARKING ADDITION) ---
+    const drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+
+    const drawControl = new L.Control.Draw({
+        edit: { featureGroup: drawnItems },
+        draw: {
+            polygon: {
+                allowIntersection: false,
+                shapeOptions: { color: '#3b82f6' }
+            },
+            polyline: false,
+            rectangle: { shapeOptions: { color: '#3b82f6' } },
+            circle: false,
+            circlemarker: false,
+            marker: false
+        }
+    });
+    map.addControl(drawControl);
+
+    map.on(L.Draw.Event.CREATED, function (e) {
+        const layer = e.layer;
+        drawnItems.addLayer(layer);
+        
+        const geoJSON = layer.toGeoJSON();
+        const coords = JSON.stringify(geoJSON.geometry.coordinates);
+        
+        // Provide the coordinates to the user so they can give them back to me
+        setTimeout(() => {
+            prompt("Ai desenat cu succes locul! Copiază aceste coordonate și trimite-mi-le pentru a le salva permanent în baza de date:", coords);
+        }, 100);
+    });
+
+    map.on(L.Draw.Event.EDITED, function (e) {
+        const layers = e.layers;
+        layers.eachLayer(function (layer) {
+            const geoJSON = layer.toGeoJSON();
+            const coords = JSON.stringify(geoJSON.geometry.coordinates);
+            setTimeout(() => {
+                prompt("Ai modificat cu succes colțurile! Copiază noile coordonate:", coords);
+            }, 100);
+        });
+    });
+    // -----------------------------------------------------------
+
+    // Load Mock GIS Data
+    let gisLayer;
+    let gisLayerList;
+
+    const gisStyle = (feature) => ({
+        color: '#ffffff',
+        weight: 1,
+        fillOpacity: 0.5,
+        fillColor: feature.properties.color
+    });
+
+    const onGisFeatureClick = (e) => {
+        L.DomEvent.stopPropagation(e);
+        
+        const props = e.target.feature.properties;
+        
+        document.getElementById('address').value = props.address;
+        document.getElementById('spotNumber').value = props.spot_id;
+        
+        const center = e.target.getBounds().getCenter();
+        
+        if (appState.tempMarker) {
+            map.removeLayer(appState.tempMarker);
+            mapList.removeLayer(appState.tempMarkerList);
+        }
+        
+        appState.selectedCoord = center;
+        
+        const createMarker = () => L.marker(center, {
+            icon: L.divIcon({
+                className: 'custom-div-icon',
+                html: "<div style='background-color:#f59e0b; width:14px; height:14px; border-radius:50%; border:2px solid white; box-shadow:0 0 10px rgba(245,158,11,0.8);'></div>",
+                iconSize: [14, 14],
+                iconAnchor: [7, 7]
+            })
+        });
+
+        appState.tempMarker = createMarker().addTo(map);
+        appState.tempMarkerList = createMarker().addTo(mapList);
+
+        showToast(`Selected Spot ${props.spot_id}!`);
+        window.location.hash = '#list';
+    };
+
+    if (typeof sector3GeoJSON !== 'undefined') {
+        const geoJsonConfig = {
+            style: gisStyle,
+            onEachFeature: (feature, layer) => {
+                layer.on('click', onGisFeatureClick);
+            }
+        };
+        gisLayer = L.geoJSON(sector3GeoJSON, geoJsonConfig);
+        gisLayerList = L.geoJSON(sector3GeoJSON, geoJsonConfig);
+    }
+
+    // Toggle GIS layers based on zoom
+    const toggleGisLayer = () => {
+        const zoom = map.getZoom();
+        if (zoom >= 17) {
+            if (gisLayer && !map.hasLayer(gisLayer)) map.addLayer(gisLayer);
+            if (gisLayerList && !mapList.hasLayer(gisLayerList)) mapList.addLayer(gisLayerList);
+        } else {
+            if (gisLayer && map.hasLayer(gisLayer)) map.removeLayer(gisLayer);
+            if (gisLayerList && mapList.hasLayer(gisLayerList)) mapList.removeLayer(gisLayerList);
+        }
+    };
+
+    map.on('zoomend', toggleGisLayer);
+    toggleGisLayer(); // initial check
+    
+    // Quick Demo helper
+    window.flyToDemo = () => {
+        window.location.hash = '#hero';
+        map.flyTo([44.424800, 26.180500], 21);
+    };
 
     renderOverlays(appState.spots);
 
-    // Click on map to select listing location
-    map.on('click', async (e) => {
+    // Click on map to select listing location (outside GIS polygons)
+    const handleMapClick = async (e) => {
+        document.getElementById('spotNumber').value = ""; // Clear spot number
+
         if (appState.tempMarker) {
             map.removeLayer(appState.tempMarker);
+            mapList.removeLayer(appState.tempMarkerList);
         }
         
         appState.selectedCoord = e.latlng;
         
-        appState.tempMarker = L.marker(e.latlng, {
+        const createMarker = () => L.marker(e.latlng, {
             icon: L.divIcon({
                 className: 'custom-div-icon',
                 html: "<div style='background-color:#3b82f6; width:12px; height:12px; border-radius:50%; border:2px solid white; box-shadow:0 0 10px rgba(59,130,246,0.8);'></div>",
                 iconSize: [12, 12],
                 iconAnchor: [6, 6]
             })
-        }).addTo(map);
+        });
+
+        appState.tempMarker = createMarker().addTo(map);
+        appState.tempMarkerList = createMarker().addTo(mapList);
 
         showToast("Location selected! Reverse geocoding address...");
         
@@ -141,7 +314,6 @@ function initMap() {
             const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}`);
             const data = await res.json();
             if (data && data.display_name) {
-                // Shorten address (usually it's very long)
                 const shortAddress = data.display_name.split(',').slice(0, 3).join(',');
                 document.getElementById('address').value = shortAddress;
                 showToast("Address automatically filled!");
@@ -149,10 +321,10 @@ function initMap() {
         } catch (err) {
             console.warn("Reverse geocoding failed", err);
         }
-        
-        // Scroll to form
-        document.getElementById('list').scrollIntoView({ behavior: 'smooth' });
-    });
+    };
+
+    map.on('click', handleMapClick);
+    mapList.on('click', handleMapClick);
 
     // Add listeners for time changes
     document.getElementById('startTime').addEventListener('change', updateApp);
@@ -179,27 +351,30 @@ function getDuration() {
 function renderOverlays(spots) {
     // Clear existing layers
     spotLayers.forEach(layer => map.removeLayer(layer));
+    spotLayersList.forEach(layer => mapList.removeLayer(layer));
     spotLayers = [];
+    spotLayersList = [];
 
     const duration = getDuration();
 
     spots.forEach(spot => {
         const isOccupied = spot.status === 'booked';
         
-        // Improved drawing: making them look like actual parking slots (long rectangles)
-        // If the spot doesn't have bounds, generate them from center
         const bounds = spot.bounds || [
             [spot.center[0] - 0.0001, spot.center[1] - 0.0002],
             [spot.center[0] + 0.0001, spot.center[1] + 0.0002]
         ];
 
-        const rect = L.rectangle(bounds, {
+        const rectOptions = {
             color: isOccupied ? '#ef4444' : '#22c55e',
             weight: 1,
             fillOpacity: 0.6,
             fillColor: isOccupied ? '#ef4444' : '#22c55e',
             className: isOccupied ? 'spot-occupied' : 'spot-available'
-        }).addTo(map);
+        };
+
+        const rect = L.rectangle(bounds, rectOptions).addTo(map);
+        const rectList = L.rectangle(bounds, rectOptions).addTo(mapList);
 
         const totalPrice = (spot.price * duration).toFixed(2);
         
@@ -227,10 +402,19 @@ function renderOverlays(spots) {
             maxWidth: 300,
             className: 'custom-popup'
         });
+        rectList.bindPopup(popupContent, {
+            maxWidth: 300,
+            className: 'custom-popup'
+        });
+        
         spotLayers.push(rect);
+        spotLayersList.push(rectList);
 
         rect.on('click', (e) => {
             map.flyTo(e.latlng, 17);
+        });
+        rectList.on('click', (e) => {
+            mapList.flyTo(e.latlng, 17);
         });
     });
 }
@@ -250,27 +434,56 @@ window.bookSpot = (id) => {
 // Handle Form Submission (Listing/Sell)
 const listForm = document.getElementById('listForm');
 if (listForm) {
-    listForm.addEventListener('submit', (e) => {
+    listForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
-        if (!appState.selectedCoord) {
-            showToast("Please click on the map first to select the location of your spot!", true);
-            document.getElementById('find').scrollIntoView({ behavior: 'smooth' });
-            return;
-        }
 
         const address = document.getElementById('address').value;
         const price = parseFloat(document.getElementById('price').value);
         const type = document.getElementById('type').value;
+
+        if (price < 0) {
+            showToast("Price cannot be negative.", true);
+            return;
+        }
+
+        let lat, lng;
+
+        if (appState.selectedCoord) {
+            lat = appState.selectedCoord.lat;
+            lng = appState.selectedCoord.lng;
+        } else {
+            // Forward geocoding if map wasn't clicked
+            showToast("Finding address on map...");
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + " Bucharest")}&limit=1`);
+                const data = await res.json();
+                
+                if (data && data.length > 0) {
+                    lat = parseFloat(data[0].lat);
+                    lng = parseFloat(data[0].lon);
+                    showToast("Address mapped successfully!");
+                } else {
+                    showToast("Could not locate address. Please click on the map.", true);
+                    return;
+                }
+            } catch (err) {
+                console.error("Geocoding failed", err);
+                showToast("Failed to find location. Please use the map.", true);
+                return;
+            }
+        }
+
+        const spotNum = document.getElementById('spotNumber').value;
+        const descriptionText = spotNum ? `Sector 3 Parking Spot: ${spotNum}. A premium ${type} spot.` : `A premium ${type} spot listed by you.`;
 
         const newSpot = {
             id: Date.now(),
             address: address,
             price: price,
             type: type,
-            center: [appState.selectedCoord.lat, appState.selectedCoord.lng],
+            center: [lat, lng],
             status: 'available',
-            description: `A premium ${type} spot listed by you.`
+            description: descriptionText
         };
 
         appState.spots.push(newSpot);
@@ -287,8 +500,9 @@ if (listForm) {
         showToast("Success! Your parking spot is now live globally.");
         listForm.reset();
         
-        // Scroll back to map
-        document.getElementById('find').scrollIntoView({ behavior: 'smooth' });
+        // Switch to map
+        window.location.hash = '#hero';
+        setTimeout(() => map.flyTo([lat, lng], 17), 300);
     });
 }
 
@@ -379,9 +593,61 @@ function initGeocoding() {
     });
 }
 
+// SPA Navigation
+function initNavigation() {
+    const sections = document.querySelectorAll('main > section');
+    const navLinks = document.querySelectorAll('.nav-links a');
+
+    function navigateTo(targetId) {
+        // Hide all sections
+        sections.forEach(sec => sec.classList.remove('active'));
+        // Remove active class from nav links
+        navLinks.forEach(link => link.classList.remove('active-link'));
+        
+        // Show target section
+        const targetSec = document.querySelector(targetId);
+        if (targetSec) {
+            targetSec.classList.add('active');
+            // Re-render map if map section is shown
+            if (targetId === '#hero' && typeof map !== 'undefined') {
+                setTimeout(() => map.invalidateSize(), 100);
+            } else if (targetId === '#list' && typeof mapList !== 'undefined') {
+                setTimeout(() => mapList.invalidateSize(), 100);
+            }
+        }
+        
+        // Highlight nav link
+        const activeLink = document.querySelector(`.nav-links a[href="${targetId}"]`);
+        if (activeLink) activeLink.classList.add('active-link');
+        
+        // Scroll to top
+        window.scrollTo(0, 0);
+    }
+
+    // Handle clicks on any link starting with #
+    document.querySelectorAll('a[href^="#"]').forEach(link => {
+        link.addEventListener('click', (e) => {
+            const targetId = link.getAttribute('href');
+            if (targetId.startsWith('#')) {
+                e.preventDefault();
+                window.location.hash = targetId;
+            }
+        });
+    });
+
+    window.addEventListener('hashchange', () => {
+        const hash = window.location.hash || '#hero';
+        navigateTo(hash);
+    });
+
+    const initialHash = window.location.hash || '#hero';
+    navigateTo(initialHash);
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
     startClock();
+    initNavigation();
     await loadState(); // Load global state first
     initMap();
     initGeocoding();
