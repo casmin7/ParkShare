@@ -1,0 +1,18 @@
+# Windows thumbnail cache
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node (in case it's used later)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Mac metadata
+.DS_Store
