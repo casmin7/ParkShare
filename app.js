@@ -1,6 +1,5 @@
-// Mock Data for Parking Spots in Bucharest
-// Bounds are [SouthWest, NorthEast] (slight offsets to create rectangles)
-const mockSpots = [
+// Initial Default Data
+const defaultSpots = [
     {
         id: 1,
         address: "Piața Unirii - Central Parking",
@@ -8,7 +7,8 @@ const mockSpots = [
         type: "Parking Lot",
         center: [44.4268, 26.1025],
         bounds: [[44.4266, 26.1023], [44.4270, 26.1027]],
-        description: "Secure parking right in the heart of Bucharest."
+        description: "Secure parking right in the heart of Bucharest.",
+        status: 'available'
     },
     {
         id: 2,
@@ -17,7 +17,8 @@ const mockSpots = [
         type: "Garage",
         center: [44.4517, 26.0863],
         bounds: [[44.4515, 26.0861], [44.4519, 26.0865]],
-        description: "Perfect for commuters working near the Government building."
+        description: "Perfect for commuters working near the Government building.",
+        status: 'available'
     },
     {
         id: 3,
@@ -26,7 +27,8 @@ const mockSpots = [
         type: "Garage",
         center: [44.4355, 26.1025],
         bounds: [[44.4353, 26.1023], [44.4357, 26.1027]],
-        description: "Quick access to the Old Town and University."
+        description: "Quick access to the Old Town and University.",
+        status: 'available'
     },
     {
         id: 4,
@@ -35,30 +37,25 @@ const mockSpots = [
         type: "Driveway",
         center: [44.4304, 26.0526],
         bounds: [[44.4302, 26.0524], [44.4306, 26.0528]],
-        description: "Privately owned space near the mall."
-    },
-    {
-        id: 5,
-        address: "Promenada North Tower",
-        price: 12.00,
-        type: "Parking Lot",
-        center: [44.4789, 26.1044],
-        bounds: [[44.4787, 26.1042], [44.4791, 26.1046]],
-        description: "Premium spot in the northern business district."
-    },
-    {
-        id: 6,
-        address: "ParkLake Residential Area",
-        price: 4.00,
-        type: "Driveway",
-        center: [44.4214, 26.1500],
-        bounds: [[44.4212, 26.1498], [44.4216, 26.1502]],
-        description: "Safe driveway space near the park."
+        description: "Privately owned space near the mall.",
+        status: 'available'
     }
 ];
 
+// App State
+let appState = {
+    spots: JSON.parse(localStorage.getItem('parkshare_spots')) || defaultSpots,
+    selectedCoord: null,
+    tempMarker: null
+};
+
 let map;
 let spotLayers = [];
+
+// Helper to save state
+function saveState() {
+    localStorage.setItem('parkshare_spots', JSON.stringify(appState.spots));
+}
 
 // Function to initialize the map
 function initMap() {
@@ -68,7 +65,30 @@ function initMap() {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    renderOverlays(mockSpots);
+    renderOverlays(appState.spots);
+
+    // Click on map to select listing location
+    map.on('click', (e) => {
+        if (appState.tempMarker) {
+            map.removeLayer(appState.tempMarker);
+        }
+        
+        appState.selectedCoord = e.latlng;
+        
+        appState.tempMarker = L.marker(e.latlng, {
+            icon: L.divIcon({
+                className: 'custom-div-icon',
+                html: "<div style='background-color:#3b82f6; width:12px; height:12px; border-radius:50%; border:2px solid white; box-shadow:0 0 10px rgba(59,130,246,0.8);'></div>",
+                iconSize: [12, 12],
+                iconAnchor: [6, 6]
+            })
+        }).addTo(map);
+
+        showToast("Location selected! Now fill out the form below.");
+        
+        // Scroll to form
+        document.getElementById('list').scrollIntoView({ behavior: 'smooth' });
+    });
 
     // Add listeners for time changes
     document.getElementById('startTime').addEventListener('change', updateApp);
@@ -76,7 +96,7 @@ function initMap() {
 }
 
 function updateApp() {
-    renderOverlays(mockSpots);
+    renderOverlays(appState.spots);
 }
 
 // Calculate hours between two time strings
@@ -100,65 +120,135 @@ function renderOverlays(spots) {
     const duration = getDuration();
 
     spots.forEach(spot => {
-        // Simple mock availability logic: Victoriei is occupied after 12:00
-        const isOccupied = spot.id === 2 && document.getElementById('startTime').value > "12:00";
+        const isOccupied = spot.status === 'booked';
         
-        const rect = L.rectangle(spot.bounds, {
+        // Improved drawing: making them look like actual parking slots (long rectangles)
+        // If the spot doesn't have bounds, generate them from center
+        const bounds = spot.bounds || [
+            [spot.center[0] - 0.0001, spot.center[1] - 0.0002],
+            [spot.center[0] + 0.0001, spot.center[1] + 0.0002]
+        ];
+
+        const rect = L.rectangle(bounds, {
             color: isOccupied ? '#ef4444' : '#22c55e',
-            weight: 2,
-            fillOpacity: 0.4,
-            fillColor: isOccupied ? '#ef4444' : '#22c55e'
+            weight: 1,
+            fillOpacity: 0.6,
+            fillColor: isOccupied ? '#ef4444' : '#22c55e',
+            className: isOccupied ? 'spot-occupied' : 'spot-available'
         }).addTo(map);
 
         const totalPrice = (spot.price * duration).toFixed(2);
         
         const popupContent = `
             <div class="map-popup">
-                <h3 style="margin-bottom: 5px; font-size: 1rem;">${spot.address}</h3>
-                <p style="color: #94a3b8; font-size: 0.8rem; margin-bottom: 10px;">${spot.description}</p>
-                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-bottom: 10px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
-                        <span>Rate:</span> <span>$${spot.price.toFixed(2)}/hr</span>
+                <div class="popup-tag" style="background: ${isOccupied ? '#ef4444' : '#22c55e'}">${isOccupied ? 'Occupied' : 'Available'}</div>
+                <h3>${spot.address}</h3>
+                <p>${spot.description || "No description provided."}</p>
+                <div class="popup-stats">
+                    <div class="stat-item">
+                        <span class="label">Rate:</span> <span class="val">$${spot.price.toFixed(2)}/hr</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-top: 5px; font-weight: 700;">
-                        <span>Total (${duration.toFixed(1)} hrs):</span> <span style="color: #3b82f6;">$${totalPrice}</span>
+                    <div class="stat-item total">
+                        <span class="label">Total (${duration.toFixed(1)}h):</span> <span class="val">$${totalPrice}</span>
                     </div>
                 </div>
                 ${isOccupied ? 
-                    '<div style="color: #ef4444; font-weight: 700; text-align: center; border: 1px solid #ef4444; padding: 5px; border-radius: 8px;">OCCUPIED</div>' : 
-                    `<button class="btn btn-primary" style="width:100%;" onclick="bookSpot(${spot.id})">Book Selection</button>`
+                    '<div class="status-badge occupied">RESERVED</div>' : 
+                    `<button class="btn btn-primary btn-block" onclick="bookSpot(${spot.id})">Reserve Now</button>`
                 }
             </div>
         `;
 
-        rect.bindPopup(popupContent);
+        rect.bindPopup(popupContent, {
+            maxWidth: 300,
+            className: 'custom-popup'
+        });
         spotLayers.push(rect);
 
-        // Auto-zoom to spot on high zoom levels if clicked
         rect.on('click', (e) => {
-            map.flyTo(e.latlng, 16);
+            map.flyTo(e.latlng, 17);
         });
     });
 }
 
-// Mock booking function
+// Booking function
 window.bookSpot = (id) => {
-    const spot = mockSpots.find(s => s.id === id);
-    alert(`Booking feature coming soon!\n\nSpot: ${spot.address}\nPrice: $${spot.price.toFixed(2)}/hr`);
+    const spotIndex = appState.spots.findIndex(s => s.id === id);
+    if (spotIndex === -1) return;
+
+    appState.spots[spotIndex].status = 'booked';
+    saveState();
+    renderOverlays(appState.spots);
+    
+    showToast(`Booking Confirmed! You have reserved ${appState.spots[spotIndex].address}.`);
 };
 
-// Handle Form Submission
+// Handle Form Submission (Listing/Sell)
 const listForm = document.getElementById('listForm');
 if (listForm) {
     listForm.addEventListener('submit', (e) => {
         e.preventDefault();
+        
+        if (!appState.selectedCoord) {
+            showToast("Please click on the map first to select the location of your spot!", true);
+            document.getElementById('find').scrollIntoView({ behavior: 'smooth' });
+            return;
+        }
+
         const address = document.getElementById('address').value;
-        const price = document.getElementById('price').value;
+        const price = parseFloat(document.getElementById('price').value);
         const type = document.getElementById('type').value;
 
-        alert(`Successfully Listed!\n\nAddress: ${address}\nPrice: $${price}/hr\nType: ${type}\n\nYour spot is now live on ParkShare.`);
+        const newSpot = {
+            id: Date.now(),
+            address: address,
+            price: price,
+            type: type,
+            center: [appState.selectedCoord.lat, appState.selectedCoord.lng],
+            status: 'available',
+            description: `A premium ${type} spot listed by you.`
+        };
+
+        appState.spots.push(newSpot);
+        saveState();
+        renderOverlays(appState.spots);
+        
+        // Clear marker and coord
+        if (appState.tempMarker) {
+            map.removeLayer(appState.tempMarker);
+            appState.tempMarker = null;
+        }
+        appState.selectedCoord = null;
+
+        showToast("Success! Your parking spot is now live globally.");
         listForm.reset();
+        
+        // Scroll back to map
+        document.getElementById('find').scrollIntoView({ behavior: 'smooth' });
     });
+}
+
+// Toast Notification System
+function showToast(message, isError = false) {
+    const toast = document.createElement('div');
+    toast.className = `toast ${isError ? 'toast-error' : 'toast-success'}`;
+    toast.innerHTML = `
+        <div class="toast-content">
+            <i data-lucide="${isError ? 'alert-circle' : 'check-circle'}" style="width:18px; height:18px;"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    lucide.createIcons();
+
+    // Trigger animation
+    setTimeout(() => toast.classList.add('show'), 100);
+
+    // Remove after 4s
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 500);
+    }, 4000);
 }
 
 // Navbar scroll effect
