@@ -209,6 +209,31 @@ function initMap() {
     // Load Mock GIS Data
     let gisLayer;
     let gisLayerList;
+    let customGisSpots = [];
+
+    // --- CALIBRATION OFFSETS ---
+    let gisOffsetLat = 0;
+    let gisOffsetLng = 0;
+
+    document.addEventListener('keydown', (e) => {
+        // Nudge offset based on arrow keys
+        if (e.key === 'ArrowUp') gisOffsetLat += 0.000005;
+        else if (e.key === 'ArrowDown') gisOffsetLat -= 0.000005;
+        else if (e.key === 'ArrowLeft') gisOffsetLng -= 0.000005;
+        else if (e.key === 'ArrowRight') gisOffsetLng += 0.000005;
+        else if (e.key === 'Enter') {
+            const offsetStr = `lat: ${gisOffsetLat.toFixed(6)}, lng: ${gisOffsetLng.toFixed(6)}`;
+            setTimeout(() => {
+                prompt("Trimite-mi acest offset pentru a-l salva permanent:", offsetStr);
+            }, 100);
+            return;
+        } else {
+            return; // ignore other keys
+        }
+        
+        e.preventDefault(); // prevent scrolling
+        renderGisLayers();
+    });
 
     const gisStyle = (feature) => ({
         color: '#ffffff',
@@ -251,14 +276,78 @@ function initMap() {
     };
 
     if (typeof sector3GeoJSON !== 'undefined') {
-        const geoJsonConfig = {
-            style: gisStyle,
-            onEachFeature: (feature, layer) => {
-                layer.on('click', onGisFeatureClick);
+        window.renderGisLayers = () => {
+            if (gisLayer && map.hasLayer(gisLayer)) map.removeLayer(gisLayer);
+            if (gisLayerList && mapList.hasLayer(gisLayerList)) mapList.removeLayer(gisLayerList);
+            
+            // --- AUTO ALIGNMENT BASED ON USER'S EXACT BOUNDING BOX ---
+            // Only run once if the offset hasn't been set manually
+            if (gisOffsetLat === 0 && gisOffsetLng === 0 && sector3GeoJSON.features.length > 0) {
+                // The user provided the exact bounding box for the long row of spots:
+                // [[[26.150521,44.413318],[26.150457,44.413356],[26.151253,44.413799],[26.151304,44.413768],[26.150521,44.413318]]]
+                const targetCenterLat = (44.413318 + 44.413356 + 44.413799 + 44.413768) / 4;
+                const targetCenterLng = (26.150521 + 26.150457 + 26.151253 + 26.151304) / 4;
+
+                // Find the long row in the raw data (it is the leftmost group of spots)
+                // We calculate the center of the features with the lowest longitude
+                let minLngGlobal = 999;
+                sector3GeoJSON.features.forEach(f => {
+                    f.geometry.coordinates[0].forEach(pt => minLngGlobal = Math.min(minLngGlobal, pt[0]));
+                });
+
+                let minLatRaw = 999, maxLatRaw = -999, minLngRaw = 999, maxLngRaw = -999;
+                let count = 0;
+                
+                sector3GeoJSON.features.forEach(f => {
+                    let isLongRow = false;
+                    f.geometry.coordinates[0].forEach(pt => {
+                        if (pt[0] < minLngGlobal + 0.001) isLongRow = true; // Within 0.001 degrees of the leftmost edge
+                    });
+                    
+                    if (isLongRow) {
+                        f.geometry.coordinates[0].forEach(pt => {
+                            minLngRaw = Math.min(minLngRaw, pt[0]);
+                            maxLngRaw = Math.max(maxLngRaw, pt[0]);
+                            minLatRaw = Math.min(minLatRaw, pt[1]);
+                            maxLatRaw = Math.max(maxLatRaw, pt[1]);
+                        });
+                        count++;
+                    }
+                });
+
+                if (count > 0) {
+                    const rawCenterLat = (minLatRaw + maxLatRaw) / 2;
+                    const rawCenterLng = (minLngRaw + maxLngRaw) / 2;
+                    
+                    gisOffsetLat = targetCenterLat - rawCenterLat;
+                    gisOffsetLng = targetCenterLng - rawCenterLng;
+                    console.log(`Auto-Calibrated Offset: Lat ${gisOffsetLat}, Lng ${gisOffsetLng}`);
+                }
             }
+            // ---------------------------------------------------------
+
+            const offsetGeoJSON = JSON.parse(JSON.stringify(sector3GeoJSON));
+            offsetGeoJSON.features.forEach(f => {
+                if (f.geometry && f.geometry.coordinates) {
+                    f.geometry.coordinates[0].forEach(pt => {
+                        pt[0] += gisOffsetLng;
+                        pt[1] += gisOffsetLat;
+                    });
+                }
+            });
+
+            const geoJsonConfig = {
+                style: gisStyle,
+                onEachFeature: (feature, layer) => {
+                    layer.on('click', onGisFeatureClick);
+                }
+            };
+
+            gisLayer = L.geoJSON(offsetGeoJSON, geoJsonConfig);
+            gisLayerList = L.geoJSON(offsetGeoJSON, geoJsonConfig);
+            
+            toggleGisLayer();
         };
-        gisLayer = L.geoJSON(sector3GeoJSON, geoJsonConfig);
-        gisLayerList = L.geoJSON(sector3GeoJSON, geoJsonConfig);
     }
 
     // Toggle GIS layers based on zoom
@@ -272,6 +361,8 @@ function initMap() {
             if (gisLayerList && mapList.hasLayer(gisLayerList)) mapList.removeLayer(gisLayerList);
         }
     };
+    
+    if (window.renderGisLayers) window.renderGisLayers();
 
     map.on('zoomend', toggleGisLayer);
     toggleGisLayer(); // initial check
@@ -279,7 +370,11 @@ function initMap() {
     // Quick Demo helper
     window.flyToDemo = () => {
         window.location.hash = '#hero';
-        map.flyTo([44.424800, 26.180500], 21);
+        if (window.demoCenter) {
+            map.flyTo(window.demoCenter, 21);
+        } else {
+            map.flyTo([44.424800, 26.180500], 21);
+        }
     };
 
     renderOverlays(appState.spots);
