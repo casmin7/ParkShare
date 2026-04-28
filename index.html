@@ -6,13 +6,16 @@
     <title>ParkShare Bucharest | Peer-to-Peer Parking</title>
     <meta name="description" content="Find or loan a parking space in Bucharest. The ultimate peer-to-peer parking marketplace for our city.">
     <link rel="stylesheet" href="style.css">
-    <!-- Leaflet CSS & Draw CSS -->
+    <!-- Leaflet CSS & Draw CSS & MarkerCluster CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
-    <!-- Leaflet JS & Draw JS & Proj4 JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    <!-- Leaflet JS & Draw JS & Proj4 JS & MarkerCluster JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,19 +24,24 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
+    <div class="global-bg"></div>
     <nav class="navbar">
         <div class="container">
             <div class="logo">
-                <i data-lucide="map-pin"></i>
-                <span>ParkShare</span>
+                <a href="#hero" style="display:flex; align-items:center; gap:0.5rem; text-decoration:none; color:inherit;">
+                    <i data-lucide="map-pin"></i>
+                    <span>ParkShare</span>
+                </a>
             </div>
             <ul class="nav-links">
-                <li><a href="#hero" class="nav-btn active">Home</a></li>
-                <li><a href="#list" class="nav-btn">Rent my Spot</a></li>
+                <li><a href="#find-spot" class="nav-btn">Find your spot</a></li>
+                <li><a href="#list" class="nav-btn">Rent my spot</a></li>
             </ul>
             <div class="nav-extra">
                 <div id="digitalClock" class="digital-clock glass-card">00:00:00</div>
-                <button class="btn btn-primary" id="loginBtn">Sign In</button>
+                <div id="authContainer">
+                    <button class="btn btn-primary" id="loginBtn">Sign In</button>
+                </div>
             </div>
         </div>
     </nav>
@@ -41,42 +49,119 @@
     <main>
         <!-- Map & Hero Section -->
         <section id="hero" class="active">
-            <div class="container hero-split">
-                <div class="hero-left">
-                    <h1 class="gradient-text">Park in Bucharest. <br>Stress Free.</h1>
-                    <p class="subtitle">Join Bucharest's first peer-to-peer parking community. Find a spot or list your own space.</p>
-                    
-                    <div class="dashboard-controls-vertical">
-                        <div class="search-container">
-                            <div class="search-bar glass-card">
-                                <i data-lucide="search"></i>
-                                <input type="text" id="mapSearch" placeholder="Search address in Bucharest..." autocomplete="off">
-                            </div>
-                            <div id="searchResults" class="search-results"></div>
-                        </div>
-                        
-                        <button onclick="flyToDemo()" class="btn btn-outline" style="width: 100%; font-size: 0.8rem; margin-top: -0.5rem;">📍 View Sector 3 Demo Block</button>
-
-                        <div class="time-controls glass-card">
-                            <div class="time-input">
-                                <label>From</label>
-                                <input type="time" id="startTime" value="09:00">
-                            </div>
-                            <div class="time-divider"></div>
-                            <div class="time-input">
-                                <label>To</label>
-                                <input type="time" id="endTime" value="11:00">
-                            </div>
-                        </div>
+            
+            <div class="container hero-centered">
+                <div class="hero-content-center">
+                    <div class="hero-logo-large">
+                        <i data-lucide="map-pin" style="width: 72px; height: 72px; color: var(--primary);"></i>
                     </div>
-
-                    <div class="hero-actions" style="margin-top: 2rem;">
-                        <a href="#list" class="btn btn-outline btn-lg">Rent Your Space</a>
+                    <h1 class="gradient-text hero-title">ParkShare</h1>
+                    <p class="subtitle hero-desc">Bucharest's first peer-to-peer parking community. Find a spot or list your own space.</p>
+                    
+                    <div class="google-search-container" id="mainSearchContainer">
+                        <div class="google-style-search">
+                            <i data-lucide="search" style="color: #9aa0a6;"></i>
+                            <input type="text" id="mapSearch" placeholder="Search address in Bucharest..." autocomplete="off">
+                            <button id="btnToggleMap" onclick="toggleInlineMap()" class="btn-icon" style="color: var(--primary);" title="Toggle Map View"><i data-lucide="map"></i></button>
+                        </div>
+                        <div id="searchResults" class="search-results center-results"></div>
+                        
+                        <!-- Inline Expandable Map -->
+                        <div id="inlineMapContainer" class="inline-map-container glass-card">
+                            <div class="inline-map-header">
+                                <div class="time-controls" style="padding: 0.25rem 1rem; background: transparent; border: none;">
+                                    <div class="time-input">
+                                        <label>From</label>
+                                        <input type="time" id="startTime" value="09:00">
+                                    </div>
+                                    <div class="time-divider"></div>
+                                    <div class="time-input">
+                                        <label>To</label>
+                                        <input type="time" id="endTime" value="11:00">
+                                    </div>
+                                </div>
+                                <button onclick="flyToDemo()" class="btn btn-outline btn-sm">📍 Sector 3 Demo</button>
+                                <button onclick="toggleInlineMap()" class="btn-icon"><i data-lucide="chevron-up"></i></button>
+                            </div>
+                            <div class="map-wrapper" style="height: 400px; min-height: 400px; padding: 0;">
+                                <div id="map" style="width: 100%; height: 100%; border-radius: 12px; z-index: 1;"></div>
+                            </div>
+                            
+                            <div class="hero-action-buttons" style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 1rem;">
+                                <button id="btnFindNearest" class="btn btn-primary btn-pill">
+                                    <i data-lucide="navigation"></i> Find Nearest Spot
+                                </button>
+                                <a href="#list" class="btn btn-outline btn-pill">Rent Your Space</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="hero-right">
-                    <div class="map-wrapper glass-card">
-                        <div id="map"></div>
+            </div>
+        </section>
+
+        <!-- Find Your Spot Section -->
+        <section id="find-spot" class="page-section" style="display: none; padding-top: 100px;">
+            <div class="container">
+                <h2 style="text-align: center; margin-bottom: 2rem;">Find the Perfect Spot</h2>
+                <div class="find-layout" style="display: flex; gap: 2rem; flex-wrap: wrap;">
+                    
+                    <!-- Filters Sidebar -->
+                    <div class="filters-sidebar glass-card" style="flex: 1; min-width: 250px; padding: 1.5rem;">
+                        <h3 style="margin-bottom: 1rem;">Filters</h3>
+                        
+                        <div class="filter-group" style="margin-bottom: 1.5rem;">
+                            <label style="display: block; margin-bottom: 0.5rem;">Price Range (RON / hr)</label>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <input type="number" id="filterPriceMin" placeholder="Min" min="0" value="0" style="width: 100%; padding: 0.5rem; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: white;">
+                                <span>-</span>
+                                <input type="number" id="filterPriceMax" placeholder="Max" min="0" value="10" style="width: 100%; padding: 0.5rem; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: white;">
+                            </div>
+                        </div>
+
+                        <div class="filter-group" style="margin-bottom: 1.5rem;">
+                            <label style="display: block; margin-bottom: 0.5rem;">Amenities</label>
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" id="filterShade" value="shade"> La umbră
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" id="filterCCTV" value="cctv"> Supravegheat video
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" id="filterCovered" value="covered"> Acoperit
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" id="filterEV" value="ev"> Încărcare EV
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="filter-group" style="margin-bottom: 1.5rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">Map Layers (POIs)</label>
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" id="togglePOIParking" value="parking" checked> 🅿️ Parcări Publice
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" id="togglePOIBanks" value="bank"> 🏛️ Bănci / Instituții
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" id="togglePOIShops" value="shop"> 🛒 Magazine
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <button id="btnApplyFilters" class="btn btn-primary btn-block">Apply Filters</button>
+                    </div>
+
+                    <!-- Map Container -->
+                    <div class="find-map-container glass-card" style="flex: 3; min-width: 300px; padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+                        <div class="map-wrapper" style="height: 600px; min-height: 600px; padding: 0; width: 100%; position: relative;">
+                            <div id="mapFind" style="width: 100%; height: 100%; z-index: 1; border-radius: 20px;"></div>
+                            <button id="btnFindNearestPage" class="btn btn-primary btn-pill" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 400; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+                                <i data-lucide="navigation"></i> Find Nearest Spot
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -101,8 +186,8 @@
                             </div>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="price">Price (per hour)</label>
-                                    <input type="number" id="price" placeholder="$5.00" min="0" step="0.01" required>
+                                    <label for="price">Price (per hour in RON)</label>
+                                    <input type="number" id="price" placeholder="5.00" min="1" max="5" step="0.5" required>
                                 </div>
                                 <div class="form-group">
                                     <label for="type">Space Type</label>
@@ -130,7 +215,110 @@
         </div>
     </footer>
 
-    <script src="mock-gis.js"></script>
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal-overlay">
+        <div class="modal-card glass-card">
+            <div class="modal-header">
+                <h2>Create Account</h2>
+                <button id="closeRegisterModal" class="btn-icon"><i data-lucide="x"></i></button>
+            </div>
+            <form id="registerForm" class="profile-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="regFirstName">First Name</label>
+                        <input type="text" id="regFirstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regLastName">Last Name</label>
+                        <input type="text" id="regLastName" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="regUsername">Username</label>
+                    <input type="text" id="regUsername" required>
+                </div>
+                <div class="form-group">
+                    <label for="regDob">Date of Birth</label>
+                    <input type="date" id="regDob" required>
+                </div>
+                <div class="form-group">
+                    <label for="regContact">Email or Phone Number</label>
+                    <input type="text" id="regContact" required>
+                </div>
+                <div class="form-group">
+                    <label for="regPassword">Password</label>
+                    <input type="password" id="regPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="regConfirmPassword">Confirm Password</label>
+                    <input type="password" id="regConfirmPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Register</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal-overlay">
+        <div class="modal-card glass-card">
+            <div class="modal-header">
+                <h2>Log In</h2>
+                <button id="closeLoginModal" class="btn-icon"><i data-lucide="x"></i></button>
+            </div>
+            <form id="loginForm" class="profile-form">
+                <div class="form-group">
+                    <label for="loginContact">Email or Phone Number</label>
+                    <input type="text" id="loginContact" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Connect</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal-overlay">
+        <div class="modal-card glass-card">
+            <div class="modal-header">
+                <h2>Your Profile</h2>
+                <button id="closeProfileModal" class="btn-icon"><i data-lucide="x"></i></button>
+            </div>
+            <form id="profileForm" class="profile-form">
+                <div class="profile-avatar-preview">
+                    <img id="profilePreviewImg" src="https://ui-avatars.com/api/?name=User&background=3b82f6&color=fff" alt="Profile">
+                </div>
+                <div class="form-group">
+                    <label for="profilePicUrl">Profile Picture URL</label>
+                    <input type="url" id="profilePicUrl" placeholder="https://example.com/avatar.png">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="profileCarMake">Vehicle Make & Model</label>
+                        <input type="text" id="profileCarMake" placeholder="e.g. Toyota Corolla">
+                    </div>
+                    <div class="form-group">
+                        <label for="profileLicense">License Plate</label>
+                        <input type="text" id="profileLicense" placeholder="B 123 ABC">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="profileBio">Bio (Optional)</label>
+                    <input type="text" id="profileBio" placeholder="I park here often...">
+                </div>
+                <div class="form-group">
+                    <label>Account Details (Read Only)</label>
+                    <input type="text" id="profileReadOnlyDetails" disabled style="opacity: 0.6; cursor: not-allowed;">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Save Changes</button>
+                <button type="button" id="logoutBtn" class="btn btn-outline btn-block" style="margin-top: 1rem; border-color: #ef4444; color: #ef4444;">Log Out</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
     <script src="app.js"></script>
     <script>
         // Initialize icons
