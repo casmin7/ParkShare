@@ -3,14 +3,14 @@ import urllib.parse
 import json
 import traceback
 
-print('Fetching POIs for Sector 3 Bounding Box from Overpass API (GET)...')
-# Bounding box for roughly Sector 3 area:
+print('Fetching POIs for Sector 4 Bounding Box from Overpass API (GET)...')
+# Bounding box for roughly Sector 4 area:
 query = """
 [out:json][timeout:50];
 (
-nwr["amenity"="parking"](44.38,26.11,44.44,26.22);
-nwr["amenity"="bank"](44.38,26.11,44.44,26.22);
-nwr["shop"](44.38,26.11,44.44,26.22);
+nwr["amenity"="parking"](44.35,26.07,44.43,26.17);
+nwr["amenity"="bank"](44.35,26.07,44.43,26.17);
+nwr["shop"](44.35,26.07,44.43,26.17);
 );
 out center;
 """
@@ -43,7 +43,7 @@ try:
             continue
         pois.append({'lat': lat, 'lon': lon, 'type': t, 'name': n})
 
-    print(f'Found {len(pois)} POIs in Sector 3 bbox.')
+    print(f'Found {len(pois)} POIs in Sector 4 bbox.')
     with open('pois.json', 'w', encoding='utf-8') as f:
         json.dump(pois, f, ensure_ascii=False)
     print('Saved to pois.json.')

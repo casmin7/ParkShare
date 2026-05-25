@@ -2,9 +2,9 @@ import urllib.request
 import json
 from pyproj import Transformer
 
-url = "https://parcari3.ro:8443/parcari/api/Parking/wfs?service=WFS&version=1.0.0&request=GetFeature&typeName=PS3:v_123_cad_loc_parcare_arie&outputFormat=application/json&srsname=EPSG:3844&bbox=584000,320000,598000,332000,EPSG:3844"
+url = "https://gs1.mobilitateurbana4.ro/?service=WFS&version=1.0.0&request=GetFeature&typeName=Sector4_city:nparking_parcari_linii&outputFormat=application/json&srsname=EPSG:4326"
 
-print("Fetching WFS data for Sector 3... this may take 10-20 seconds (58 MB expected).")
+print("Fetching WFS data for Sector 4... this may take 10-20 seconds.")
 
 try:
     req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
@@ -65,7 +65,7 @@ out_json = {
     "features": clean_features
 }
 
-out_file = "s3_polygons.json"
+out_file = "s4_polygons.json"
 with open(out_file, "w", encoding="utf-8") as f:
     json.dump(out_json, f, separators=(',', ':'))
 

@@ -1,0 +1,55 @@
+ParkShare Sector 4
+    Viitorul Mobilității Urbane în Sectorul 4
+    Prima comunitate de parcare peer-to-peer. Soluție digitală autonomă cu costuri zero pentru bugetul local.
+    Proiect Pilot asumat de ParkShare S.R.L. | Mai 2026
+
+Presiunea Auto asupra Sectorului 4
+    51.000 Locuri Rezidențiale atribuite nominal (Oferta noastră statică)
+    115.000 Mașini FĂRĂ Loc dependente de străzi secundare (Cererea noastră)
+    176% Congestie la Vârf în București (Viteza medie de 13.3 km/h în S4)
+
+Validare Științifică: Efectul de „Cruising”
+    Studiul UCLA (Prof. Donald Shoup): „Peste 30% din blocajele și poluarea din districtele rezidențiale sunt generate exclusiv de șoferi care se învârt în gol pentru a găsi un loc de parcare eliberat.”
+    Soluția de Shared Parking (Urban Land Institute): Maparea dinamică reduce necesarul fizic de noi construcții de beton cu până la 40%, protejând spațiile verzi din Sectorul 4.
+
+Ecosistemul Funcțional ParkShare
+    1. Locuri Nominale: Valorificarea spațiului residential deținut de persoane fizice pe perioada zilei (08:30 - 16:15).
+    2. Rezervare Rapidă: Identificare instantanee pe harta interactivă Leaflet cu ghidaj precis la numărul locului.
+    3. Venit Pasiv: Transformarea locului gol într-un portofel fiscal dedicat stingerii taxelor către primărie.
+
+Interfața Utilizatorului: Meniul „Caută Loc”
+    3-Column Layout Dashboard: Interfață web fluidă implementată nativ în frontend, gata de producție.
+    Clustere GIS active: Vizualizare dinamică a numărului de locuri prin straturi Leaflet.js.
+    Filtre premium: Sortare după tarife (plafonat la 5 RON/oră), supraveghere video CCTV sau încărcare EV.
+    [Aici se inserează imaginea image_6750e4.jpg]
+
+Securitatea Ofertei: Înscriere cu Validare PDF
+    Filtru PDF Dropzone Obligatoriu: Proprietarul este obligat să încarce contractul oficial de închiriere eliberat de Primăria S4 pentru verificarea legitimării.
+    Map-Click precis pentru identificarea numărului de loc pe parcelă.
+    Costuri stradale ZERO: Se folosesc marcajele interne existente pe asfalt ale Direcției Mobilitate S4.
+    [Aici se inserează imaginea image_675124.jpg]
+
+Soluția Juridică: Campanie HCL „Fără Speculă”
+    Decontare automată către DGITL S4: Toate veniturile din partajare sunt blocate în portofelul electronic și folosite exclusiv pentru plata taxei de parcare sau a impozitului auto.
+    GDPR Blind Query API: Platforma nu accesează date sensibile (CNP, Nume). Serverul primăriei răspunde doar prin True/False.
+    Anonimizare totală: Identitățile utilizatorilor sunt mascate (sistem similar Uber/Bolt).
+
+Managementul Incidentelor: Protocol Dual Clor
+    Protocolul Șoferului: Dacă locul este ocupat de un intrus, platforma face refund instant și oferă Relocalizare Automată Gratuită pe cel mai apropiat spațiu ParkShare liber.
+    Protocolul Autorității: Utilizatorul trimite un raport cu coordonate GPS și dovadă foto prin butonul de Alertă Digitală direct către Poliția Locală S4 pentru ridicare/amendă.
+
+Poziționarea pe Piața de Smart Mobility
+    ParkShare: Locuri rezidențiale cartieri | ZERO Costuri hardware | Deschide 80% din rețeaua neutilizată
+    amParcat (Partener S4): Doar locuri publice albastre | ZERO Costuri hardware | Focusat doar pe bulevarde mari
+    ZenParking: Proprietăți comerciale/private | Bariere fizice pe asfalt | Sistem izolat B2B
+
+Plan Financiar de Dezvoltare și Scalare
+    Faza MVP (Lansare 3 luni): Finanțare din capital propriu, premii concursuri de business și Business Angels.
+    Faza de Scalare (Fonduri UE): Absorbție prin programe europene structurale (Europa Digitală / Horizon Europe).
+    0 RON Solicitare din Bugetul Local S4: Primăria nu suportă riscuri de capital.
+
+Lansarea Proiectului Pilot de 6 Luni
+    Protocol de Colaborare Non-Financiar pentru o singură stradă rezidențială aglomerată din Sectorul 4.
+    Obiectiv: Validarea soluției software, reducerea timpului de căutare în trafic și reducerea emisiilor de CO2.
+    Demo Live Platformă: parkshare.casmin.eu
+    Contact Echipă: contact@parkshare.ro

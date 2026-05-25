@@ -13,9 +13,9 @@ def main():
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
 
-    url = 'https://parcari3.ro:8443/parcari/api/Parking/wfs?service=WFS&version=1.0.0&request=GetFeature&typeName=PS3:v_123_cad_loc_parcare_arie&geometryName=geometry&outputFormat=application/json&srsname=EPSG:3844&bbox=580000,320000,600000,335000,EPSG:3844'
+    url = 'https://gs1.mobilitateurbana4.ro/?service=WFS&version=1.0.0&request=GetFeature&typeName=Sector4_city:nparking_parcari_linii&outputFormat=application/json&srsname=EPSG:4326'
     
-    print("Fetching data from parcari3.ro WFS endpoint. This may take a moment...")
+    print("Fetching data from mobilitateurbana4.ro WFS endpoint. This may take a moment...")
     req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
     
     try:
@@ -48,7 +48,7 @@ def main():
                     
                 optimized_props = {
                     "spot_id": props.get('nr_loc_parcare', 'Unknown'),
-                    "address": props.get('delimitare_zona', 'Sector 3'),
+                    "address": props.get('delimitare_zona', 'Sector 4'),
                     "status": status_str,
                     "color": color
                 }
@@ -76,7 +76,7 @@ def main():
                 "features": optimized_features
             }
             
-            out_file = "sector3_parking.geojson"
+            out_file = "sector4_parking.geojson"
             with open(out_file, "w", encoding="utf-8") as f:
                 json.dump(optimized_geojson, f, separators=(',', ':'))
             

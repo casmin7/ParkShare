@@ -18,7 +18,7 @@ let appState = {
 };
 
 let currentUser = JSON.parse(localStorage.getItem('parkshare_user')) || null;
-const massiveMockSpots = [{"lat": 44.4172462, "lng": 26.1411516, "num": "13", "code": "236_1"}, {"lat": 44.4170745, "lng": 26.1410877, "num": "7", "code": "236_1"}, {"lat": 44.4171243, "lng": 26.1411062, "num": "11", "code": "236_1"}, {"lat": 44.4172782, "lng": 26.1411632, "num": "14", "code": "236_1"}, {"lat": 44.4172152, "lng": 26.14114, "num": "12", "code": "236_1"}, {"lat": 44.417099, "lng": 26.1410967, "num": "9", "code": "236_1"}, {"lat": 44.4186916, "lng": 26.1310154, "num": "2M", "code": "282_1"}, {"lat": 44.4187322, "lng": 26.1310843, "num": "2", "code": "282_1"}, {"lat": 44.4187525, "lng": 26.1310963, "num": "3", "code": "282_1"}, {"lat": 44.4090723, "lng": 26.1398011, "num": "17", "code": "318"}, {"lat": 44.4090623, "lng": 26.1397746, "num": "18", "code": "318"}, {"lat": 44.4092065, "lng": 26.1398518, "num": "14", "code": "318"}, {"lat": 44.4091265, "lng": 26.1397599, "num": "10", "code": "318"}, {"lat": 44.4090656, "lng": 26.1394682, "num": "1", "code": "318"}, {"lat": 44.4090873, "lng": 26.1395272, "num": "3", "code": "318"}, {"lat": 44.4091848, "lng": 26.1397927, "num": "12", "code": "318"}, {"lat": 44.409159, "lng": 26.1398484, "num": "13", "code": "318"}, {"lat": 44.413751, "lng": 26.1492927, "num": "8", "code": "8200"}, {"lat": 44.4137079, "lng": 26.1492709, "num": "11", "code": "8200"}, {"lat": 44.413559, "lng": 26.1491377, "num": "19", "code": "8200"}, {"lat": 44.4137947, "lng": 26.1492027, "num": "6", "code": "8200"}, {"lat": 44.4136528, "lng": 26.1492216, "num": "14", "code": "8200"}, {"lat": 44.4138025, "lng": 26.1491727, "num": "5", "code": "8200"}, {"lat": 44.417028, "lng": 26.1818124, "num": "2", "code": "3524_1"}, {"lat": 44.4169478, "lng": 26.1817938, "num": "5", "code": "3524_1"}, {"lat": 44.4169268, "lng": 26.1817889, "num": "6", "code": "3524_1"}, {"lat": 44.4169058, "lng": 26.181784, "num": "7", "code": "3524_1"}, {"lat": 44.416662, "lng": 26.1817274, "num": "17", "code": "3524_1"}, {"lat": 44.4165537, "lng": 26.1817023, "num": "22", "code": "3524_1"}, {"lat": 44.4213922, "lng": 26.1213587, "num": "9", "code": "507"}, {"lat": 44.4215533, "lng": 26.1213688, "num": "3", "code": "507"}, {"lat": 44.4215946, "lng": 26.1214003, "num": "1", "code": "507"}, {"lat": 44.4215748, "lng": 26.1213852, "num": "2", "code": "507"}, {"lat": 44.4215921, "lng": 26.1212488, "num": "16", "code": "507"}, {"lat": 44.4213959, "lng": 26.121329, "num": "8", "code": "507"}, {"lat": 44.4214542, "lng": 26.1212041, "num": "11", "code": "507"}, {"lat": 44.4214991, "lng": 26.1212077, "num": "12", "code": "507"}, {"lat": 44.4207952, "lng": 26.1218443, "num": "11", "code": "5328_2"}, {"lat": 44.4206088, "lng": 26.1217547, "num": "5", "code": "5328_2"}, {"lat": 44.4206725, "lng": 26.1217825, "num": "7", "code": "5328_2"}, {"lat": 44.4207746, "lng": 26.1218343, "num": "10", "code": "5328_2"}, {"lat": 44.4208863, "lng": 26.1218951, "num": "15", "code": "5328_2"}, {"lat": 44.4287263, "lng": 26.1729421, "num": "6", "code": "3001_1"}, {"lat": 44.4288144, "lng": 26.1736203, "num": "25", "code": "3001_1"}, {"lat": 44.4287387, "lng": 26.173038, "num": "9", "code": "3001_1"}, {"lat": 44.4287096, "lng": 26.172814, "num": "2", "code": "3001_1"}, {"lat": 44.4287842, "lng": 26.1733874, "num": "18", "code": "3001_1"}, {"lat": 44.4287346, "lng": 26.1730061, "num": "8", "code": "3001_1"}, {"lat": 44.4287304, "lng": 26.1729741, "num": "7", "code": "3001_1"}, {"lat": 44.4132689, "lng": 26.1345253, "num": "5", "code": "292_1"}, {"lat": 44.4136915, "lng": 26.134105, "num": "23", "code": "292_1"}, {"lat": 44.4137312, "lng": 26.133882, "num": "29", "code": "292_1"}, {"lat": 44.4136531, "lng": 26.134128, "num": "21", "code": "292_1"}, {"lat": 44.4132361, "lng": 26.1345637, "num": "3", "code": "292_1"}, {"lat": 44.4132199, "lng": 26.1345828, "num": "2", "code": "292_1"}, {"lat": 44.4134325, "lng": 26.1343305, "num": "12", "code": "292_1"}, {"lat": 44.4135714, "lng": 26.134186, "num": "18", "code": "292_1"}, {"lat": 44.414198, "lng": 26.1697899, "num": "12", "code": "132_1"}, {"lat": 44.4142667, "lng": 26.1692463, "num": "29", "code": "132_1"}, {"lat": 44.414159, "lng": 26.1702173, "num": "2", "code": "132_1"}, {"lat": 44.4141877, "lng": 26.169891, "num": "10", "code": "132_1"}, {"lat": 44.4141732, "lng": 26.1701089, "num": "4", "code": "132_1"}, {"lat": 44.4142592, "lng": 26.169306, "num": "27", "code": "132_1"}, {"lat": 44.4142058, "lng": 26.1697283, "num": "14", "code": "132_1"}, {"lat": 44.4222204, "lng": 26.16965, "num": "15", "code": "455_1"}, {"lat": 44.4220902, "lng": 26.1687558, "num": "43", "code": "455_1"}, {"lat": 44.4221968, "lng": 26.1694655, "num": "21", "code": "455_1"}, {"lat": 44.4222746, "lng": 26.1700664, "num": "2", "code": "455_1"}, {"lat": 44.4222363, "lng": 26.1697723, "num": "11", "code": "455_1"}, {"lat": 44.4220864, "lng": 26.1687262, "num": "44", "code": "455_1"}, {"lat": 44.4251263, "lng": 26.1225248, "num": "37", "code": "149"}, {"lat": 44.4252105, "lng": 26.1217086, "num": "21", "code": "149"}, {"lat": 44.4252091, "lng": 26.1218965, "num": "15", "code": "149"}, {"lat": 44.4252088, "lng": 26.1219599, "num": "13", "code": "149"}, {"lat": 44.4252091, "lng": 26.121865, "num": "16", "code": "149"}, {"lat": 44.4251284, "lng": 26.1219272, "num": "12", "code": "149"}, {"lat": 44.4251312, "lng": 26.1215802, "num": "1", "code": "149"}, {"lat": 44.4251302, "lng": 26.1216443, "num": "3", "code": "149"}, {"lat": 44.4208426, "lng": 26.1147466, "num": "14", "code": "113_2"}, {"lat": 44.4208156, "lng": 26.1146309, "num": "12", "code": "113_2"}, {"lat": 44.4208005, "lng": 26.1146998, "num": "10", "code": "113_2"}, {"lat": 44.420805, "lng": 26.1147629, "num": "8", "code": "113_2"}, {"lat": 44.420809, "lng": 26.1148242, "num": "6", "code": "113_2"}, {"lat": 44.4208171, "lng": 26.1149501, "num": "2", "code": "113_2"}, {"lat": 44.4208136, "lng": 26.114889, "num": "4", "code": "113_2"}, {"lat": 44.420807, "lng": 26.1147939, "num": "7", "code": "113_2"}, {"lat": 44.4200099, "lng": 26.1227863, "num": "25", "code": "2810"}, {"lat": 44.4199507, "lng": 26.1232311, "num": "10", "code": "2810"}, {"lat": 44.4199815, "lng": 26.1229631, "num": "19", "code": "2810"}, {"lat": 44.4233266, "lng": 26.1466018, "num": "56", "code": "3045"}, {"lat": 44.4235438, "lng": 26.1484514, "num": "21", "code": "3045"}, {"lat": 44.4234383, "lng": 26.1478622, "num": "33", "code": "3045"}, {"lat": 44.4232522, "lng": 26.1486515, "num": "10", "code": "3045"}, {"lat": 44.4232547, "lng": 26.1465462, "num": "50", "code": "3045"}, {"lat": 44.4268802, "lng": 26.1207678, "num": "7", "code": "5315"}, {"lat": 44.4268868, "lng": 26.1206489, "num": "10", "code": "5315"}, {"lat": 44.4268824, "lng": 26.1207346, "num": "8", "code": "5315"}, {"lat": 44.4268775, "lng": 26.1208006, "num": "6", "code": "5315"}, {"lat": 44.426871, "lng": 26.1209003, "num": "3", "code": "5315"}, {"lat": 44.4268756, "lng": 26.1208345, "num": "5", "code": "5315"}, {"lat": 44.4268732, "lng": 26.1208674, "num": "4", "code": "5315"}, {"lat": 44.4232539, "lng": 26.1370032, "num": "4", "code": "537_3"}, {"lat": 44.4232864, "lng": 26.137009, "num": "3", "code": "537_3"}, {"lat": 44.4231577, "lng": 26.1369352, "num": "9", "code": "537_3"}, {"lat": 44.4232708, "lng": 26.1369571, "num": "13", "code": "537_3"}, {"lat": 44.4233251, "lng": 26.136968, "num": "15", "code": "537_3"}, {"lat": 44.4232389, "lng": 26.136951, "num": "12", "code": "537_3"}, {"lat": 44.4232015, "lng": 26.1369939, "num": "6", "code": "537_3"}, {"lat": 44.4275966, "lng": 26.1322423, "num": "30", "code": "146_2"}, {"lat": 44.4275151, "lng": 26.1321071, "num": "25", "code": "146_2"}, {"lat": 44.4274362, "lng": 26.1320817, "num": "2", "code": "146_2"}, {"lat": 44.427858, "lng": 26.1326335, "num": "44", "code": "146_2"}, {"lat": 44.4278037, "lng": 26.132595, "num": "42", "code": "146_2"}, {"lat": 44.4273187, "lng": 26.1318912, "num": "10", "code": "146_2"}, {"lat": 44.4277812, "lng": 26.1325585, "num": "41", "code": "146_2"}, {"lat": 44.4215467, "lng": 26.1190339, "num": "6", "code": "430"}, {"lat": 44.4215264, "lng": 26.1190325, "num": "7", "code": "430"}, {"lat": 44.4216514, "lng": 26.1190428, "num": "1", "code": "430"}, {"lat": 44.4268603, "lng": 26.170363, "num": "37", "code": "1021_2"}, {"lat": 44.4264729, "lng": 26.1679176, "num": "121", "code": "1021_2"}, {"lat": 44.4264566, "lng": 26.1677935, "num": "124", "code": "1021_2"}, {"lat": 44.4265913, "lng": 26.168812, "num": "94", "code": "1021_2"}, {"lat": 44.426817, "lng": 26.1700363, "num": "26", "code": "1021_2"}, {"lat": 44.4266637, "lng": 26.1693593, "num": "78", "code": "1021_2"}, {"lat": 44.4268087, "lng": 26.1704655, "num": "45", "code": "1021_2"}];
+const massiveMockSpots = [{"lat":44.411981,"lng":26.108311,"num":"3","code":"459"},{"lat":44.383634,"lng":26.1138612,"num":"12","code":"2067"},{"lat":44.3965545,"lng":26.1087635,"num":"17","code":"1446"},{"lat":44.3781495,"lng":26.1212175,"num":"15","code":"666"},{"lat":44.3910065,"lng":26.11439,"num":"39","code":"2644"},{"lat":44.3854288,"lng":26.1002355,"num":"3","code":"1547"},{"lat":44.3772827,"lng":26.104562,"num":"7","code":"113"},{"lat":44.3784845,"lng":26.1214515,"num":"12","code":"2599"},{"lat":44.384518,"lng":26.1180485,"num":"2","code":"3247"},{"lat":44.3839675,"lng":26.097026,"num":"1","code":"1551"},{"lat":44.392189,"lng":26.096568,"num":"13","code":"1490"},{"lat":44.380588,"lng":26.1051932,"num":"14","code":"3048"},{"lat":44.419873,"lng":26.0988242,"num":"3","code":"4560"},{"lat":44.384034,"lng":26.111707,"num":"6","code":"4190"},{"lat":44.3910335,"lng":26.0966802,"num":"10","code":"1487"},{"lat":44.387016,"lng":26.1176658,"num":"3","code":"2404"},{"lat":44.3836258,"lng":26.1137755,"num":"15","code":"2067"},{"lat":44.4085637,"lng":26.11424,"num":"14","code":"4202"},{"lat":44.3872025,"lng":26.1058965,"num":"5","code":"16"},{"lat":44.385397,"lng":26.1002792,"num":"1","code":"1547"},{"lat":44.386996,"lng":26.117795,"num":"2","code":"2404"},{"lat":44.3835785,"lng":26.1281433,"num":"6","code":"776"},{"lat":44.3939405,"lng":26.1183945,"num":"10","code":"3188"},{"lat":44.3950085,"lng":26.1184625,"num":"13","code":"3933"},{"lat":44.4172145,"lng":26.1034878,"num":"35","code":"504"},{"lat":44.3830445,"lng":26.1060153,"num":"27","code":"61"},{"lat":44.3800308,"lng":26.116862,"num":"1","code":"2085"},{"lat":44.381522,"lng":26.1031895,"num":"5","code":"47"},{"lat":44.4007113,"lng":26.1192422,"num":"1","code":"323"},{"lat":44.3912507,"lng":26.113224,"num":"4","code":"1350"},{"lat":44.384495,"lng":26.10475,"num":"2","code":"3108"},{"lat":44.384341,"lng":26.1217487,"num":"37","code":"2622"},{"lat":44.380367,"lng":26.1297755,"num":"11","code":"3481"},{"lat":44.3996985,"lng":26.102268,"num":"1","code":"1491"},{"lat":44.406334,"lng":26.1199465,"num":"5","code":"334"},{"lat":44.378107,"lng":26.123206,"num":"67","code":"805"},{"lat":44.390687,"lng":26.1086865,"num":"10","code":"4465"},{"lat":44.3811245,"lng":26.1328965,"num":"7","code":"938"},{"lat":44.4198395,"lng":26.0978125,"num":"5","code":"4576"},{"lat":44.3706655,"lng":26.1367435,"num":"9","code":"3908"},{"lat":44.393493,"lng":26.1091065,"num":"11","code":"1666"},{"lat":44.391504,"lng":26.1127405,"num":"7","code":"1347"},{"lat":44.382932,"lng":26.1257417,"num":"5","code":"753"},{"lat":44.388943,"lng":26.1321165,"num":"19","code":"3606"},{"lat":44.3832865,"lng":26.0956143,"num":"3","code":"1275"},{"lat":44.388952,"lng":26.1298178,"num":"1","code":"1115"},{"lat":44.3829057,"lng":26.1255903,"num":"10","code":"753"},{"lat":44.3802655,"lng":26.123659,"num":"25","code":"2608"},{"lat":44.388309,"lng":26.0949925,"num":"5","code":"4254"},{"lat":44.417192,"lng":26.1010218,"num":"3","code":"4577"},{"lat":44.4006695,"lng":26.115744,"num":"6","code":"4208"},{"lat":44.3849182,"lng":26.1076155,"num":"77","code":"4172"},{"lat":44.3837835,"lng":26.1064147,"num":"13","code":"230"},{"lat":44.3907685,"lng":26.1142955,"num":"13","code":"1359"},{"lat":44.4283685,"lng":26.0963537,"num":"5","code":"3772"},{"lat":44.420574,"lng":26.103596,"num":"38","code":"515"},{"lat":44.3872243,"lng":26.1059045,"num":"6","code":"16"},{"lat":44.3780305,"lng":26.120791,"num":"12","code":"2529"},{"lat":44.3909615,"lng":26.12962,"num":"13","code":"3571"},{"lat":44.3779625,"lng":26.11747,"num":"29","code":"2940"},{"lat":44.3869807,"lng":26.1036207,"num":"66","code":"4002"},{"lat":44.3857457,"lng":26.095152,"num":"8","code":"3829"},{"lat":44.3898667,"lng":26.1316505,"num":"13","code":"1790"},{"lat":44.3954148,"lng":26.1176878,"num":"2","code":"3804"},{"lat":44.3820195,"lng":26.1339445,"num":"5","code":"1078"},{"lat":44.384727,"lng":26.12126,"num":"13","code":"800"},{"lat":44.395821,"lng":26.1117742,"num":"10","code":"1291"},{"lat":44.3911555,"lng":26.0967445,"num":"15","code":"1487"},{"lat":44.380421,"lng":26.1297335,"num":"14","code":"3481"},{"lat":44.3812942,"lng":26.1344613,"num":"10","code":"2294"},{"lat":44.3779605,"lng":26.117298,"num":"27","code":"2940"},{"lat":44.424978,"lng":26.1024595,"num":"1","code":"4564"},{"lat":44.3806705,"lng":26.129335,"num":"2","code":"913"},{"lat":44.3807743,"lng":26.109769,"num":"11","code":"64"},{"lat":44.392205,"lng":26.0965498,"num":"14","code":"1490"},{"lat":44.3912095,"lng":26.114386,"num":"43","code":"2644"},{"lat":44.3713417,"lng":26.1378438,"num":"4","code":"2428"},{"lat":44.3772692,"lng":26.1046545,"num":"10","code":"113"},{"lat":44.3813495,"lng":26.1280692,"num":"18","code":"3484"},{"lat":44.3828635,"lng":26.120311,"num":"2","code":"722"},{"lat":44.3905985,"lng":26.1178375,"num":"7","code":"1374"},{"lat":44.4089558,"lng":26.1169745,"num":"11","code":"399"},{"lat":44.3812537,"lng":26.0965972,"num":"3","code":"1239"},{"lat":44.3958643,"lng":26.1117745,"num":"12","code":"1291"},{"lat":44.3809552,"lng":26.118419,"num":"13","code":"811"},{"lat":44.3805435,"lng":26.1052,"num":"12","code":"3048"},{"lat":44.380298,"lng":26.1237325,"num":"22","code":"2608"},{"lat":44.408529,"lng":26.1144278,"num":"8","code":"4202"},{"lat":44.3834467,"lng":26.0950333,"num":"5","code":"1275"},{"lat":44.3813725,"lng":26.1343145,"num":"13","code":"2294"},{"lat":44.380879,"lng":26.118306,"num":"10","code":"811"},{"lat":44.3821045,"lng":26.1346367,"num":"3","code":"2127"},{"lat":44.3958857,"lng":26.1117745,"num":"13","code":"1291"},{"lat":44.3818857,"lng":26.1322743,"num":"4","code":"849"},{"lat":44.3843385,"lng":26.105151,"num":"13","code":"274"},{"lat":44.3811625,"lng":26.1329647,"num":"4","code":"938"},{"lat":44.3774277,"lng":26.1088432,"num":"12","code":"3788"},{"lat":44.3939343,"lng":26.1010705,"num":"3","code":"4369"},{"lat":44.3837527,"lng":26.1214785,"num":"4","code":"2623"},{"lat":44.3912715,"lng":26.1132237,"num":"5","code":"1350"},{"lat":44.400464,"lng":26.1192358,"num":"12","code":"323"},{"lat":44.3870832,"lng":26.1036865,"num":"61","code":"4002"},{"lat":44.398948,"lng":26.1018792,"num":"32","code":"3143"},{"lat":44.3829135,"lng":26.120261,"num":"5","code":"722"},{"lat":44.4198705,"lng":26.0979385,"num":"3","code":"4576"},{"lat":44.3852353,"lng":26.1188953,"num":"3","code":"3251"},{"lat":44.3862872,"lng":26.099862,"num":"7","code":"1744"},{"lat":44.3875445,"lng":26.0909982,"num":"13","code":"1683"},{"lat":44.3911222,"lng":26.108671,"num":"4","code":"4465"},{"lat":44.390828,"lng":26.1299365,"num":"1","code":"3571"},{"lat":44.385223,"lng":26.118872,"num":"2","code":"3251"},{"lat":44.3802765,"lng":26.1236835,"num":"24","code":"2608"},{"lat":44.383096,"lng":26.0943172,"num":"61","code":"3490"},{"lat":44.387022,"lng":26.1036475,"num":"64","code":"4002"},{"lat":44.3898335,"lng":26.1317235,"num":"10","code":"1790"},{"lat":44.392482,"lng":26.1164805,"num":"10","code":"3521"},{"lat":44.3909285,"lng":26.129699,"num":"10","code":"3571"},{"lat":44.3829448,"lng":26.0943265,"num":"54","code":"3490"},{"lat":44.3792878,"lng":26.0938765,"num":"5","code":"1833"},{"lat":44.378303,"lng":26.1112257,"num":"6","code":"3653"},{"lat":44.3738535,"lng":26.0933085,"num":"4","code":"1169"},{"lat":44.3838555,"lng":26.0979097,"num":"4","code":"1573"},{"lat":44.3893947,"lng":26.1151335,"num":"15","code":"3231"},{"lat":44.3810488,"lng":26.0956572,"num":"16","code":"2029"},{"lat":44.3828333,"lng":26.133747,"num":"93","code":"3711"},{"lat":44.3838777,"lng":26.0978208,"num":"1","code":"1573"},{"lat":44.3966452,"lng":26.1124213,"num":"14","code":"1294"},{"lat":44.3903873,"lng":26.1249785,"num":"13","code":"2806"},{"lat":44.386552,"lng":26.1366045,"num":"11","code":"3711"},{"lat":44.3982678,"lng":26.108106,"num":"7","code":"4477"},{"lat":44.3862085,"lng":26.0997417,"num":"2","code":"1744"},{"lat":44.3824897,"lng":26.0984177,"num":"19","code":"3087"},{"lat":44.419957,"lng":26.099089,"num":"6","code":"4560"},{"lat":44.380013,"lng":26.120076,"num":"12","code":"898"},{"lat":44.377739,"lng":26.115428,"num":"4","code":"2938"},{"lat":44.412112,"lng":26.109397,"num":"12","code":"461"},{"lat":44.3866402,"lng":26.130588,"num":"45","code":"3714"},{"lat":44.377305,"lng":26.1044088,"num":"2","code":"113"},{"lat":44.381479,"lng":26.120977,"num":"10","code":"715"},{"lat":44.392074,"lng":26.0955085,"num":"12","code":"1636"}];
 
 let map, mapList, mapFind;
 let spotLayers = [], spotLayersList = [], spotLayersFind = [];
@@ -79,20 +79,36 @@ async function loadState() {
         if (response.ok) {
             const data = await response.json();
             if (Array.isArray(data)) {
-                // Dacă avem date locale mai noi (de ex. tocmai am salvat), nu le suprascriem imediat
-                appState.spots = data;
-                console.log("State loaded successfully:", data.length, "spots");
+                // Keep only Sector 4 spots (filter out any legacy data from other sectors)
+                appState.spots = data.filter(s => {
+                    const lat = s.center ? s.center[0] : (s.lat || 0);
+                    const isOutsideS4 = (s.address && !s.address.includes("Sector 4") && s.address.includes("Sector")) || lat > 44.43;
+                    return !isOutsideS4;
+                });
+                console.log("State loaded and filtered:", appState.spots.length, "Sector 4 spots remaining");
             }
         }
     } catch (err) {
         console.warn("Failed to load global state, using local fallback.", err);
         const local = localStorage.getItem('parkshare_spots');
-        if (local) appState.spots = JSON.parse(local);
+        if (local) {
+            const data = JSON.parse(local);
+            appState.spots = data.filter(s => {
+                const lat = s.center ? s.center[0] : (s.lat || 0);
+                const isOutsideS4 = (s.address && !s.address.includes("Sector 4") && s.address.includes("Sector")) || lat > 44.43;
+                return !isOutsideS4;
+            });
+        }
     }
     
-    // Dacă avem prea puține locuri, populăm cu date de test pentru a părea activ
-    if (appState.spots.length < 5) {
+    // Check if we need to seed Sector 4 mock spots (if no mock spots exist or count is low)
+    const hasS4Mock = appState.spots.some(s => s.isMock && s.address && s.address.includes("Sector 4"));
+    if (!hasS4Mock || appState.spots.length < 5) {
+        // Clear any old mock spots first to avoid duplicates
+        appState.spots = appState.spots.filter(s => !s.isMock);
         seedMockSpots();
+        // Overwrite the database with the clean Sector 4 state
+        await saveState();
     }
 }
 
@@ -124,7 +140,7 @@ function seedMockSpots() {
             spotNumber: data.num,
             parkingCode: data.code,
             gpsFingerprint: `${data.lat.toFixed(6)},${data.lng.toFixed(6)}`,
-            address: `Sector 3, Loc ${data.num}, Parcare ${data.code}`,
+            address: `Sector 4, Loc ${data.num}, Parcare ${data.code}`,
             price: 3 + Math.floor(Math.random() * 3), // Preț între 3 și 5 RON
             type: "Sedan",
             center: [data.lat, data.lng],
@@ -157,11 +173,12 @@ async function saveState() {
 }
 
 function startClock() {
-    const clockEl = document.getElementById('digitalClock');
-    if (!clockEl) return;
+    const clockEls = document.querySelectorAll('.digital-clock');
+    if (!clockEls.length) return;
     setInterval(() => {
         const now = new Date();
-        clockEl.textContent = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+        const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+        clockEls.forEach(el => el.textContent = timeStr);
     }, 1000);
 }
 
@@ -234,6 +251,14 @@ function navigateTo(targetId) {
         targetSec.classList.add('active');
         targetSec.style.display = 'block';
         window.location.hash = targetId;
+
+        // Update bottom nav active state
+        document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+            item.classList.remove('active');
+            if (item.getAttribute('href') === targetId) {
+                item.classList.add('active');
+            }
+        });
 
         // Force map refreshes
         if (targetId === '#list' && typeof mapList !== 'undefined') setTimeout(() => mapList.invalidateSize(), 100);
@@ -827,7 +852,7 @@ function initMap() {
     map = L.map('mapDashboard', {
         scrollWheelZoom: true,
         maxZoom: 22
-    }).setView([44.435, 26.102], 13);
+    }).setView([44.397, 26.103], 13);
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://carto.com/">CartoDB</a>',
@@ -838,7 +863,7 @@ function initMap() {
     mapList = L.map('map-list', {
         scrollWheelZoom: true,
         maxZoom: 22
-    }).setView([44.435, 26.102], 13);
+    }).setView([44.397, 26.103], 13);
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://carto.com/">CartoDB</a>',
@@ -849,7 +874,7 @@ function initMap() {
     mapFind = L.map('mapFind', {
         scrollWheelZoom: true,
         maxZoom: 22
-    }).setView([44.435, 26.102], 13);
+    }).setView([44.397, 26.103], 13);
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://carto.com/">CartoDB</a>',
@@ -889,16 +914,14 @@ function initMap() {
     poiLayers.parking.list.addTo(mapList);
     poiLayers.parking.find.addTo(mapFind);
     
-    // Initial fetch
-    loadStaticPOIs();
-    loadS3Polygons();
-
-    // Layer initializations for GIS
-
     // Layer initializations for GIS
     polygonLayerFind = L.layerGroup().addTo(mapFind);
     polygonLayerList = L.layerGroup().addTo(mapList);
     polygonLayerMain = L.layerGroup().addTo(map);
+
+    // Initial fetch
+    loadStaticPOIs();
+    loadS4Polygons();
 
     mapFind.on('moveend', renderVisiblePolygons);
     mapFind.on('zoomend', renderVisiblePolygons);
@@ -982,16 +1005,59 @@ function initMap() {
 
 // --- GIS Logic (Global Scope) ---
 
-async function loadS3Polygons() {
+async function loadS4Polygons() {
     try {
-        console.log("Downloading 83k polygons...");
-        const response = await fetch('s3_polygons.json');
-        if(!response.ok) return;
+        console.log("Downloading Sector 4 polygons...");
+        showToast("Se încarcă parcările din Sectorul 4...", false);
+        
+        let response;
+        let success = false;
+        let diagnosticMsg = "Unknown";
+        
+        // Fetch a specific file name that contains 'nominatim' to bypass the old stuck Service Worker, and has NO query string to avoid 404s
+        try {
+            response = await fetch('s4_points_nominatim.json', { cache: 'no-store' });
+            if (response.ok) {
+                success = true;
+            } else {
+                diagnosticMsg = "HTTP " + response.status;
+            }
+        } catch (e) {
+            console.warn("Relative fetch for s4_points.json failed", e);
+            diagnosticMsg = e.message || "Network Error";
+        }
+        
+        // If relative fetch failed, try local server fallback
+        if (!success) {
+            try {
+                // We use 127.0.0.1 instead of localhost to avoid ipv6 resolution issues sometimes causing fetch to fail
+                response = await fetch('http://127.0.0.1:8080/s4_points_nominatim.json', { cache: 'no-store' });
+                if (response.ok) {
+                    success = true;
+                    console.log("Successfully fetched points from local server fallback.");
+                } else {
+                    diagnosticMsg += " & Fallback HTTP " + response.status;
+                }
+            } catch (e) {
+                diagnosticMsg += " & Fallback " + (e.message || "Network Error");
+                console.warn("Local server fallback fetch for s4_points.json failed...", e);
+            }
+        }
+        
+        if (!success || !response) {
+            showToast("Eroare fetch (" + window.location.protocol + "): " + diagnosticMsg.substring(0, 50), true);
+            return;
+        }
+        
         const data = await response.json();
-        allPolygons = data.features;
-        console.log(`Loaded ${allPolygons.length} polygons.`);
+        allPolygons = data.features.filter(f => [0, 1, 2, 3, 4].includes(f.properties.ocupat));
+        console.log(`Loaded ${allPolygons.length} Sector 4 polygons (filtered).`);
+        showToast(`S-au încărcat ${allPolygons.length} parcări nominale/handicap.`);
         renderVisiblePolygons();
-    } catch(e) { console.warn("S3 load failed", e); }
+    } catch(e) { 
+        console.warn("S4 load failed", e); 
+        showToast("Eroare la procesarea parcărilor S4: " + e.message, true);
+    }
 }
 
 function renderVisiblePolygons() {
@@ -1002,251 +1068,174 @@ function renderVisiblePolygons() {
 }
 
 function renderPolygonsForMap(targetMap, targetLayer, isListMap) {
-    if (!targetMap || targetMap.getZoom() < 18) {
+    // Am readus pragul de afișare la zoom 19 pentru performanță maximă pe mobil
+    if (!targetMap || targetMap.getZoom() < 19) {
         targetLayer?.clearLayers();
         return;
     }
     const bounds = targetMap.getBounds();
     targetLayer.clearLayers();
 
-    
-    const getPolygonColor = (status) => {
-
-            switch(status) {
-                case 0: return '#5a835b';
-                case 1: return '#b8525b';
-                case 2: return '#cca42b';
-                case 3: return '#2c74a0';
-                case 4: return '#48acd8';
-                case 5: return '#98628b';
-                case 6: return '#000000';
-                case 7: return '#aaa0a5';
-                case 8: return '#a69fa5';
-                default: return '#3b82f6';
-            }
-        };
-
         const getPolygonTypeText = (status) => {
-            switch(status) {
-                case 0: return 'Loc nominal liber';
-                case 1: return 'Loc nominal ocupat';
-                case 2: return 'Loc ocupat prin relocare';
-                case 3: return 'Loc persoană cu handicap';
-                case 4: return 'Handicap aflat în tranzit';
-                case 5: return 'Rezervat instituție publică';
-                case 6: return 'Loc nenominal';
-                case 7: return 'Loc nenominal temporar';
-                case 8: return 'În procedură de atribuire';
-                default: return 'Tip necunoscut';
-            }
-        };
+        switch(status) {
+            case 0: return 'Loc nominal liber';
+            case 1: return 'Loc nominal ocupat';
+            case 2: return 'Loc persoană cu handicap';
+            case 3: return 'Loc persoană cu handicap';
+            case 4: return 'Handicap aflat în tranzit';
+            case 5: return 'Rezervat instituție publică';
+            case 6: return 'Loc nenominal';
+            case 7: return 'Loc nenominal temporar';
+            case 8: return 'În procedură de atribuire';
+            default: return 'Tip necunoscut';
+        }
+    };
 
-        const polyStyle = (feature) => ({
-            color: '#1e293b',
-            weight: 1,
-            fillColor: getPolygonColor(feature.properties.ocupat),
-            fillOpacity: 0.85
+    const getStatusClass = (status) => {
+        if (status >= 0 && status <= 8) return `spot-status-${status}`;
+        return 'spot-status-default';
+    };
+
+    const visibleFeatures = allPolygons.filter(f => {
+        const coords = f.geometry.coordinates; // [lng, lat]
+        if (!coords || coords.length !== 2) return false;
+        return bounds.contains(L.latLng(coords[1], coords[0]));
+    });
+
+    visibleFeatures.forEach(feature => {
+        const props = feature.properties;
+        const coords = feature.geometry.coordinates;
+        const lat = coords[1];
+        const lng = coords[0];
+        
+        const spotNum = String(props.numar || props.zona || 'N/A').replace('Loc nominal', '').trim();
+        const parkCode = String(props.cod_parcare || props.id_parcare || props.id_zona || props.nume_parcare || props.cod_loc || props.baterie || props.zona || '');
+        const gisId = String(props.id || props.OBJECTID || props.FID || '');
+        
+        let fingerprint = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+
+        const listedSpot = appState.spots.find(s => {
+            if (s.status === 'rejected') return false;
+            if (s.gpsFingerprint && fingerprint && s.gpsFingerprint === fingerprint) return true;
+            if (s.gisId && gisId && String(s.gisId) === gisId) return true;
+            if (s.parkingCode && parkCode && s.parkingCode === parkCode && String(s.spotNumber).replace('Loc nominal', '').trim() === spotNum) return true;
+            return false;
         });
 
-        const visibleFeatures = allPolygons.filter(f => {
-            const coords = f.geometry.coordinates[0][0];
-            const isVisible = bounds.contains([coords[1], coords[0]]);
-            if (!isVisible) return false;
-
-            // Includem poligonul dacă:
-            // 1. Este nominal ocupat (cele roșii pe care vrem să le vedem ca să le selectăm)
-            if (f.properties.ocupat === 1) return true;
-
-            // 2. Există deja în ParkShare (trebuie să-l vedem colorat ca rezervat/verificat)
-            const fingerprint = `${coords[1].toFixed(6)},${coords[0].toFixed(6)}`;
-            return appState.spots.some(s => s.gpsFingerprint === fingerprint);
-        });
-
-        // Pass 1: Municipal layer (EXCLUDE any spot that exists in ParkShare)
-        // Se afișează DOAR pe harta de înscriere (isListMap) pentru a putea selecta locul
-        if (isListMap) {
-            L.geoJSON(visibleFeatures, {
-                filter: (f) => {
-                    const props = f.properties;
-                    const spotNum = String(props.numar || props.zona || 'N/A').replace('Loc nominal', '').trim();
-                    const parkCode = String(props.cod_parcare || props.id_parcare || props.id_zona || props.nume_parcare || props.cod_loc || props.baterie || props.zona || '');
-                    const gisId = String(props.id || props.OBJECTID || props.FID || '');
-                    
-                    // Generăm o amprentă GPS unică bazată pe prima coordonată a poligonului
-                    let fingerprint = "";
-                    try {
-                        const firstCoord = f.geometry.coordinates[0][0];
-                        fingerprint = `${firstCoord[1].toFixed(6)},${firstCoord[0].toFixed(6)}`;
-                    } catch(e) {}
-
-                    return !appState.spots.some(s => {
-                        if (s.status === 'rejected') return false;
-
-                        // 1. Potrivire prin Fingerprint GPS (Cea mai sigură metodă)
-                        if (s.gpsFingerprint && fingerprint && s.gpsFingerprint === fingerprint) return true;
-
-                        // 2. Potrivire prin ID-uri oficiale
-                        if (s.gisId && gisId && String(s.gisId) === gisId) return true;
-                        if (s.parkingCode && parkCode && s.parkingCode === parkCode && String(s.spotNumber).replace('Loc nominal', '').trim() === spotNum) return true;
-                        
-                        return false;
-                    });
-                },
-                style: (feature) => polyStyle(feature),
-                onEachFeature: (feature, layer) => {
-                    const props = feature.properties;
-                    const spotNum = String(props.numar || props.zona || 'N/A').replace('Loc nominal', '').trim();
-                    const parkCode = String(props.cod_parcare || props.id_parcare || props.id_zona || props.nume_parcare || props.cod_loc || props.baterie || props.zona || '');
-                    const gisId = String(props.id || props.OBJECTID || props.FID || '');
-
-                    let coordStr = "";
-                    try {
-                        const ring = feature.geometry.coordinates[0];
-                        if (Array.isArray(ring)) coordStr = ring.map(c => '[' + c[1] + ',' + c[0] + ']').join(',');
-                    } catch(e) {}
-
-                    if (isListMap) {
-                        layer.bindPopup(`
-                            <div style="text-align:center; min-width:160px;">
-                                <b style="color:#3b82f6;">Loc: ${spotNum}</b><br>
-                                <span style="font-size:11px; color:gray;">Parcare: ${parkCode || 'N/A'}</span><br>
-                                <span style="font-size:12px;">${getPolygonTypeText(props.ocupat)}</span><br><br>
-                                <button onclick="selectSpotFromMap('${spotNum}', [${coordStr}], '${gisId}', '${parkCode}')" 
-                                    style="background:#3b82f6;color:white;border:none;padding:6px 16px;border-radius:8px;cursor:pointer;font-weight:600;">
-                                    ✓ Selectează Locul
-                                </button>
-                            </div>
-                        `, { maxWidth: 220 });
-                    }
-                    layer.on('click', (e) => L.DomEvent.stopPropagation(e.originalEvent));
-                }
-            }).addTo(targetLayer);
+        // Pentru harta de căutare (mapFind), arătăm DOAR locurile disponibile (albastre)
+        if (targetMap === mapFind) {
+            const isBlue = listedSpot && (listedSpot.status === 'available' || listedSpot.status === 'verified');
+            if (!isBlue) return; // Sărim peste randarea acestui marker
         }
 
-        // Pass 3: Removed Fallback Markers to keep the map clean and polygon-focused as per user request.
+        const isMine = listedSpot ? (listedSpot.owner === currentUser?.username) : false;
+        const isBooked = listedSpot ? (listedSpot.status === 'booked') : false;
         
-        // Refresh icons for new markers
-        if (window.lucide) window.lucide.createIcons();
+        let htmlClass = getStatusClass(props.ocupat);
+        if (listedSpot) {
+            if (isBooked) htmlClass = 'spot-status-temp';
+            else if (isMine) htmlClass = 'spot-status-0';
+            else htmlClass = 'spot-status-default';
+        }
 
-        // Pass 2: ParkShare layer (Verified, Booked or Pending)
-        L.geoJSON(visibleFeatures, {
-            filter: (f) => {
-                const props = f.properties;
-                const spotNum = String(props.numar || props.zona || 'N/A').replace('Loc nominal', '').trim();
-                const parkCode = String(props.cod_parcare || props.id_parcare || props.id_zona || props.nume_parcare || props.cod_loc || props.baterie || props.zona || '');
-                const gisId = String(props.id || props.OBJECTID || props.FID || '');
+        let iconHtml = '';
+        
+        // Dacă locul e pentru handicap (2, 3 sau 4), folosim iconița de scaun cu rotile
+        // Ocupat=2 (relocare) devine tot loc de handicap conform cerinței
+        if (props.ocupat === 2 || props.ocupat === 3 || props.ocupat === 4) {
+            iconHtml = `
+            <div style="width: 22px; height: 22px; position: relative; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: 2px; border: 1px solid #94a3b8; background-color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.4);">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="black" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C13.6569 2 15 3.34315 15 5C15 6.65685 13.6569 8 12 8C10.3431 8 9 6.65685 9 5C9 3.34315 10.3431 2 12 2ZM8.08332 9.07067C8.1752 9.02052 8.27838 9 8.38423 9H13V11H10.8741L12.7842 16.5936C12.8228 16.7067 12.8123 16.8294 12.756 16.9351C12.6997 17.0409 12.6027 17.1199 12.4883 17.1557L8.91038 18.2737L9.50856 20H15C15.5523 20 16 19.5523 16 19V15H18V19C18 20.6569 16.6569 22 15 22H8C7.62534 22 7.2796 21.7925 7.09886 21.4608L5.59886 18.7057C5.46231 18.4548 5.4859 18.1504 5.66014 17.9221L9.13038 13.3768L8.60105 11.8268L6.5 12.5V10.5L8.08332 9.07067Z"/>
+                </svg>
+                <div style="position: absolute; bottom: 0px; right: 0px; font-family: 'Times New Roman', Times, serif; font-size: 10px; font-weight: bold; color: #333; line-height: 1; z-index: 2;">${spotNum}</div>
+            </div>`;
+        } else {
+            let bgColor = '#b8525b'; // default ocupat (1) - ROSU
+            if(props.ocupat === 0) bgColor = '#5a835b'; // liber (0) - VERDE
 
-                let fingerprint = "";
-                try {
-                    const firstCoord = f.geometry.coordinates[0][0];
-                    fingerprint = `${firstCoord[1].toFixed(6)},${firstCoord[0].toFixed(6)}`;
-                } catch(e) {}
-
-                return appState.spots.some(s => {
-                    if (s.status === 'rejected') return false;
-                    if (s.gpsFingerprint && fingerprint && s.gpsFingerprint === fingerprint) return true;
-                    if (s.gisId && gisId && String(s.gisId) === gisId) return true;
-                    if (s.parkingCode && parkCode && s.parkingCode === parkCode && String(s.spotNumber).replace('Loc nominal', '').trim() === spotNum) return true;
-                    return false;
-                });
-            },
-            style: (feature) => {
-                const props = feature.properties;
-                const spotNum = String(props.numar || props.zona || 'N/A').replace('Loc nominal', '').trim();
-                const parkCode = String(props.cod_parcare || props.id_parcare || props.id_zona || props.nume_parcare || props.cod_loc || props.baterie || props.zona || '');
-                const gisId = String(props.id || props.OBJECTID || props.FID || '');
-
-                let fingerprint = "";
-                try {
-                    const firstCoord = feature.geometry.coordinates[0][0];
-                    fingerprint = `${firstCoord[1].toFixed(6)},${firstCoord[0].toFixed(6)}`;
-                } catch(e) {}
-
-                const listedSpot = appState.spots.find(s => {
-                    if (s.status === 'rejected') return false;
-                    if (s.gpsFingerprint && fingerprint && s.gpsFingerprint === fingerprint) return true;
-                    if (s.gisId && gisId && String(s.gisId) === gisId) return true;
-                    if (s.parkingCode && parkCode && s.parkingCode === parkCode && String(s.spotNumber).replace('Loc nominal', '').trim() === spotNum) return true;
-                    return false;
-                });
-                if (!listedSpot) return { stroke: false, fill: false };
-                const isMine = listedSpot.owner === currentUser?.username;
-                
-                // Culori diferite în funcție de status
-                let color = isMine ? '#4ade80' : '#3b82f6'; // Verde/Albastru default
-                if (listedSpot.status === 'booked') color = '#f59e0b'; // Portocaliu pentru rezervat
-                if (listedSpot.status === 'pending_verification') color = '#94a3b8'; // Gri pentru pending
-                
-                return {
-                    color: color,
-                    weight: 4,
-                    fillColor: color,
-                    fillOpacity: 1,
-                    pane: 'markerPane'
-                };
-            },
-            onEachFeature: (feature, layer) => {
-                const props = feature.properties;
-                const spotNum = String(props.numar || props.zona || 'N/A').replace('Loc nominal', '').trim();
-                const parkCode = String(props.cod_parcare || props.id_parcare || props.id_zona || props.nume_parcare || props.cod_loc || props.baterie || props.zona || '');
-                const gisId = String(props.id || props.OBJECTID || props.FID || '');
-
-                let fingerprint = "";
-                try {
-                    const firstCoord = feature.geometry.coordinates[0][0];
-                    fingerprint = `${firstCoord[1].toFixed(6)},${firstCoord[0].toFixed(6)}`;
-                } catch(e) {}
-
-                const listedSpot = appState.spots.find(s => {
-                    if (s.status === 'rejected') return false;
-                    if (s.gpsFingerprint && fingerprint && s.gpsFingerprint === fingerprint) return true;
-                    if (s.gisId && gisId && String(s.gisId) === gisId) return true;
-                    if (s.parkingCode && parkCode && s.parkingCode === parkCode && String(s.spotNumber).replace('Loc nominal', '').trim() === spotNum) return true;
-                    return false;
-                });
-
-                if (!listedSpot) return;
-                const isMine = listedSpot.owner === currentUser?.username;
-                const isBooked = listedSpot.status === 'booked';
-
-                layer.bindPopup(`
-                    <div class="map-popup" style="min-width:180px; padding: 5px;">
-                        <div class="popup-tag" style="background: ${isBooked ? '#f59e0b' : (isMine ? '#4ade80' : '#3b82f6')}; color: white; font-size: 0.65rem; margin-bottom: 8px;">
-                            ${isBooked ? '🔒 REZERVAT' : (isMine ? '✓ Locul Meu' : 'ParkShare Verificat')}
-                        </div>
-                        <div style="margin-bottom: 10px;">
-                            <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: white;">Locul ${listedSpot.spotNumber}</h3>
-                            <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">${listedSpot.address}</p>
-                        </div>
-                        
-                        ${isBooked ? 
-                            `<div style="background: rgba(245,158,11,0.1); color: #f59e0b; padding: 8px; border-radius: 8px; font-size: 0.85rem; border: 1px solid rgba(245,158,11,0.2); text-align: center;">
-                                Acest loc este ocupat momentan.
-                             </div>` : 
-                            `<div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 8px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px;">
-                                    <span style="color: var(--text-muted);">Tarif:</span> <b style="color: white;">${listedSpot.price} RON/h</b>
-                                </div>
-                             </div>
-                             ${isMine ? 
-                                `<button class="btn btn-primary btn-block" style="padding: 10px; font-size: 0.9rem; font-weight: 700; background: #4ade80; border-color: #4ade80; color: #064e3b;" 
-                                    onclick="openAvailabilityModal(${listedSpot.id})">Setează Disponibilitate</button>` :
-                                `<button class="btn btn-primary btn-block" style="padding: 10px; font-size: 0.9rem; font-weight: 700;" 
-                                    onclick="bookSpot(${listedSpot.id})">Rezervă Acum</button>`
-                             }`
-                        }
-                    </div>
-                `, { className: 'custom-popup', autoPan: true, autoPanPadding: [50, 50], offset: [0, -5] });
-                layer.on('click', (e) => L.DomEvent.stopPropagation(e.originalEvent));
-                // Adăugăm numărul locului într-un stil minimalist (fără fundal)
-                layer.bindTooltip(String(spotNum), { 
-                    permanent: true, 
-                    direction: 'center', 
-                    className: 'parking-number-label' 
-                });
+            if(listedSpot) {
+                if(listedSpot.status === 'available' || listedSpot.status === 'verified') bgColor = '#3b82f6'; // ALBASTRU (disponibil la închiriere)
+                else if(isBooked) bgColor = '#eab308'; // GALBEN (deja închiriat/rezervat)
+                else if(isMine) bgColor = '#4ade80'; // VERDE DESCHIS (locul meu)
             }
-        }).addTo(targetLayer);
-    }
+
+            iconHtml = `
+            <div style="width: 22px; height: 22px; position: relative; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: 2px; border: 1px solid rgba(255,255,255,0.7); background-color: ${bgColor}; color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.6);">
+                <span style="font-family: Arial, sans-serif; font-size: 14px; font-weight: 900; line-height: 1; margin-top: -2px; margin-left: -2px;">P</span>
+                <div style="position: absolute; bottom: -3px; right: -2px; font-family: 'Times New Roman', Times, serif; font-size: 11px; font-weight: bold; color: white; text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0px 2px 2px rgba(0,0,0,0.8); line-height: 1; z-index: 2;">${spotNum}</div>
+            </div>`;
+        }
+
+        const icon = L.divIcon({
+            html: iconHtml,
+            className: '',
+            iconSize: [22, 22],
+            iconAnchor: [11, 11]
+        });
+
+        const marker = L.marker([lat, lng], { icon: icon, pane: listedSpot ? 'markerPane' : 'overlayPane' });
+        marker.spotNumber = spotNum; // Attach for easy lookup
+
+        // Popup logic
+        if (!listedSpot) {
+            if (isListMap) {
+                marker.bindPopup(`
+                    <div style="text-align:center; min-width:160px;">
+                        <b style="color:#3b82f6;">Loc: ${spotNum}</b><br>
+                        <span style="font-size:11px; color:gray;">Parcare: ${parkCode || 'N/A'}</span><br>
+                        <span style="font-size:12px;">${getPolygonTypeText(props.ocupat)}</span><br><br>
+                        <button type="button" onclick="selectSpotFromMap('${spotNum}', [[${lat},${lng}]], '${gisId}', '${parkCode}')" 
+                            style="background:#3b82f6;color:white;border:none;padding:6px 16px;border-radius:8px;cursor:pointer;font-weight:600;">
+                            ✓ Selectează Locul
+                        </button>
+                    </div>
+                `, { maxWidth: 220 });
+            } else {
+                marker.bindPopup(`
+                    <div style="text-align:center; min-width:160px;">
+                        <b style="color:#3b82f6;">Loc: ${spotNum}</b><br>
+                        <span style="font-size:11px; color:gray;">Parcare: ${parkCode || 'N/A'}</span><br>
+                        <span style="font-size:12px;">${getPolygonTypeText(props.ocupat)}</span>
+                    </div>
+                `, { maxWidth: 220 });
+            }
+        } else {
+            marker.bindPopup(`
+                <div class="map-popup" style="min-width:180px; padding: 5px;">
+                    <div class="popup-tag" style="background: ${isBooked ? '#f59e0b' : (isMine ? '#4ade80' : '#3b82f6')}; color: white; font-size: 0.65rem; margin-bottom: 8px;">
+                        ${isBooked ? '🔒 REZERVAT' : (isMine ? '✓ Locul Meu' : 'ParkShare Verificat')}
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: white;">Locul ${listedSpot.spotNumber}</h3>
+                        <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">${listedSpot.address}</p>
+                    </div>
+                    
+                    ${isBooked ? 
+                        `<div style="background: rgba(245,158,11,0.1); color: #f59e0b; padding: 8px; border-radius: 8px; font-size: 0.85rem; border: 1px solid rgba(245,158,11,0.2); text-align: center;">
+                            Acest loc este ocupat momentan.
+                         </div>` : 
+                        `<div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 8px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px;">
+                                <span style="color: var(--text-muted);">Tarif:</span> <b style="color: white;">${listedSpot.price} RON/h</b>
+                            </div>
+                         </div>
+                         ${isMine ? 
+                            `<button class="btn btn-primary btn-block" style="padding: 10px; font-size: 0.9rem; font-weight: 700; background: #4ade80; border-color: #4ade80; color: #064e3b;" 
+                                onclick="openAvailabilityModal(${listedSpot.id})">Setează Disponibilitate</button>` :
+                            `<button class="btn btn-primary btn-block" style="padding: 10px; font-size: 0.9rem; font-weight: 700;" 
+                                onclick="bookSpot(${listedSpot.id})">Rezervă Acum</button>`
+                         }`
+                    }
+                </div>
+            `, { className: 'custom-popup', autoPan: true, autoPanPadding: [50, 50], offset: [0, -5] });
+        }
+        
+        marker.on('click', (e) => L.DomEvent.stopPropagation(e.originalEvent));
+        marker.addTo(targetLayer);
+    });
+}
+
 
     // Event listeners moved inside initMap to prevent early execution errors
 
@@ -1335,7 +1324,7 @@ window.selectSpotFromMap = (spotNumber, coordsArray, gisId, parkingCode) => {
 
     appState.selectedCoord = { lat: centerLat, lng: centerLng };
     appState.selectedPolygon = coordsArray; // Salvează poligonul exact
-    document.getElementById('address').value = `Loc nominal ${spotNumber}, Sector 3, București`;
+    document.getElementById('address').value = `Loc nominal ${spotNumber}, Sector 4, București`;
 
     // Remove old temp marker
     if (appState.tempMarkerList) {
@@ -1351,8 +1340,104 @@ window.selectSpotFromMap = (spotNumber, coordsArray, gisId, parkingCode) => {
     }).addTo(mapList);
 
     mapList.closePopup();
+    
+    // Enable "Continuă" button for Step 1
+    const btnNext1 = document.getElementById('btnNext1');
+    if (btnNext1) btnNext1.disabled = false;
+
     showToast(`Ai selectat locul ${spotNumber} (Parcare: ${parkingCode || 'N/A'})! ✓`);
 };
+
+// --- Wizard Logic ---
+window.nextWizardStep = (step) => {
+    try {
+        console.log("Navigating to step", step);
+        document.querySelectorAll('.wizard-step').forEach(el => el.style.setProperty('display', 'none', 'important'));
+        const nextStepEl = document.getElementById('wizard-step-' + step);
+        if (nextStepEl) {
+            nextStepEl.style.setProperty('display', 'flex', 'important');
+            nextStepEl.style.setProperty('flex', '1', 'important');
+            nextStepEl.style.setProperty('flex-direction', 'column', 'important');
+        } else {
+            showToast("Eroare internă: Pasul " + step + " nu a fost găsit!", true);
+            return;
+        }
+        
+        document.querySelectorAll('.wizard-step-indicator').forEach(el => {
+            el.classList.remove('active');
+        });
+        
+        // Mark previous steps as completed
+        for(let i = 1; i < step; i++) {
+            const ind = document.getElementById('indicator-' + i);
+            if (ind) {
+                ind.classList.remove('active');
+                ind.classList.add('completed');
+                ind.innerHTML = `✓ ${ind.innerHTML.split('. ')[1] || ind.innerHTML}`;
+            }
+        }
+        
+        // Set current step as active
+        const currentInd = document.getElementById('indicator-' + step);
+        if (currentInd) {
+            currentInd.classList.add('active');
+            currentInd.classList.remove('completed');
+            // If it was completed, restore its original text format
+            if (step === 2) currentInd.innerHTML = '2. Documente';
+            if (step === 3) currentInd.innerHTML = '3. Detalii';
+        }
+    } catch (e) {
+        showToast("Eroare navigare: " + e.message, true);
+    }
+};
+
+window.prevWizardStep = (step) => {
+    document.querySelectorAll('.wizard-step').forEach(el => el.style.setProperty('display', 'none', 'important'));
+    const prevStepEl = document.getElementById('wizard-step-' + step);
+    if (prevStepEl) {
+        prevStepEl.style.setProperty('display', 'flex', 'important');
+        prevStepEl.style.setProperty('flex', '1', 'important');
+        prevStepEl.style.setProperty('flex-direction', 'column', 'important');
+    }
+    
+    document.querySelectorAll('.wizard-step-indicator').forEach(el => {
+        el.classList.remove('active');
+    });
+    
+    for(let i = step + 1; i <= 3; i++) {
+        const ind = document.getElementById('indicator-' + i);
+        if (ind) {
+            ind.classList.remove('completed');
+            ind.classList.remove('active');
+            if (i === 2) ind.innerHTML = '2. Documente';
+            if (i === 3) ind.innerHTML = '3. Detalii';
+        }
+    }
+    
+    const currentInd = document.getElementById('indicator-' + step);
+    if (currentInd) {
+        currentInd.classList.add('active');
+        currentInd.classList.remove('completed');
+        if (step === 1) currentInd.innerHTML = '1. Locație';
+        if (step === 2) currentInd.innerHTML = '2. Documente';
+    }
+
+    if (step === 1) {
+        setTimeout(() => mapList.invalidateSize(), 300);
+    }
+};
+
+window.handlePdfSelect = (input) => {
+    if (input.files[0]) {
+        const el = document.getElementById('pdfFileName');
+        el.textContent = '✓ Fișier: ' + input.files[0].name;
+        el.style.display = 'block';
+        document.getElementById('pdfDropzone').style.borderColor = '#22c55e';
+        const btnNext2 = document.getElementById('btnNext2');
+        if (btnNext2) btnNext2.disabled = false;
+    }
+};
+
 
 
 
@@ -1568,7 +1653,7 @@ function initListForm() {
             const price = parseFloat(priceVal);
             const type = document.getElementById('type').value;
             const description = document.getElementById('description')?.value || '';
-            const address = document.getElementById('address').value || `Loc nominal ${spotNum}, Sector 3, București`;
+            const address = document.getElementById('address').value || `Loc nominal ${spotNum}, Sector 4, București`;
 
             // Read PDF as base64
             const pdfFile = pdfInput.files[0];
@@ -1581,7 +1666,7 @@ function initListForm() {
                 reader.readAsDataURL(pdfFile);
             });
 
-            let lat = 44.435, lng = 26.102;
+            let lat = 44.397, lng = 26.103;
             if (appState.selectedCoord) {
                 lat = appState.selectedCoord.lat;
                 lng = appState.selectedCoord.lng;
@@ -1624,10 +1709,21 @@ function initListForm() {
             if (pdfFileName) pdfFileName.style.display = 'none';
             if (pdfDropzone) pdfDropzone.style.borderColor = 'var(--glass-border)';
 
-            showToast("✅ Locul a fost trimis spre verificare! Poți vedea statusul în panoul de administrare.");
+            showToast("✅ Locul a fost trimis spre verificare!");
             
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalBtnHtml;
+            
+            // Redirect to home and reset form
+            setTimeout(() => {
+                navigateTo('#hero');
+                window.prevWizardStep(1); // Reset wizard
+                listForm.reset(); // Reset inputs
+                if (pdfFileName) {
+                    pdfFileName.textContent = '';
+                    pdfFileName.style.display = 'none';
+                }
+            }, 2500);
 
         } catch (err) {
             console.error('Eroare la trimiterea cererii:', err);
@@ -1733,7 +1829,7 @@ function handleFindNearest(targetMap, targetLayers) {
         (error) => {
             console.warn("Geolocation error, using simulated Bucharest location.", error);
             showToast("Using simulated location in Bucharest...");
-            findClosestSpotTo(44.4300, 26.0950, targetMap, targetLayers);
+            findClosestSpotTo(44.3970, 26.1030, targetMap, targetLayers);
         },
         { timeout: 5000 }
     );
@@ -1786,8 +1882,23 @@ let allMarkers = {
 async function loadStaticPOIs() {
     if (allStaticPOIsLoaded) return;
     try {
-        const res = await fetch('./pois.json');
-        if (!res.ok) return;
+        let res;
+        let success = false;
+        try {
+            res = await fetch('./pois.json');
+            if (res.ok) success = true;
+        } catch(e) {
+            console.warn("Relative fetch for pois.json failed, trying local server fallback...", e);
+        }
+        if (!success) {
+            try {
+                res = await fetch('http://localhost:8080/pois.json');
+                if (res.ok) success = true;
+            } catch(e) {
+                console.error("Local server fallback for pois.json failed...", e);
+            }
+        }
+        if (!success || !res) return;
         const data = await res.json();
         
         data.forEach(poi => {
@@ -1795,6 +1906,14 @@ async function loadStaticPOIs() {
             const lon = poi.lon;
             const type = poi.type;
             const name = poi.name;
+            
+            // Filtru pentru perimetrul Sectorului 4
+            if (lat > 44.428 || lat < 44.330 || lon < 26.070 || lon > 26.160) return;
+            // Tăiem colțul de NE (Sectorul 3 - IOR, Dristor, Vitan) deasupra Dâmboviței
+            if (lon > 26.10) {
+                const latMax = 44.425 - 0.625 * (lon - 26.10);
+                if (lat > latMax) return;
+            }
             
             let iconHtml = '';
             if (type === 'parking') {
@@ -2001,12 +2120,12 @@ function updateSearchResultsList() {
             </div>`;
     } else {
         listEl.innerHTML = availableSpots.slice(0, 30).map(spot => `
-            <div class="spot-card-premium" onclick="mapFind.flyTo([${spot.center}], 21); setTimeout(() => renderVisiblePolygons(), 500);">
+            <div class="spot-card-premium" onclick="flyAndOpenSpot('${spot.spotNumber}', ${spot.center[0]}, ${spot.center[1]})">
                 <div class="card-glow"></div>
                 <div class="card-content">
                     <div class="card-top">
                         <div class="price-tag">${spot.price} <small>RON/h</small></div>
-                        <div class="dist-tag"><i data-lucide="navigation-2"></i> ${spot.dist ? spot.dist.toFixed(2) + ' km' : 'Sector 3'}</div>
+                        <div class="dist-tag"><i data-lucide="navigation-2"></i> ${spot.dist ? spot.dist.toFixed(2) + ' km' : 'Sector 4'}</div>
                     </div>
                     <div class="card-body">
                         <h5>Locul ${spot.spotNumber}</h5>
@@ -2021,8 +2140,43 @@ function updateSearchResultsList() {
         `).join('');
     }
     
+    // Asigură-te că lista este deschisă când vin rezultate noi
+    if(window.innerWidth <= 768 && availableSpots.length > 0) {
+        listEl.classList.remove('collapsed');
+    }
+    
     if (window.lucide) window.lucide.createIcons();
 }
+
+window.flyAndOpenSpot = (spotNum, lat, lng) => {
+    // Închidem lista pe mobil ca să vedem harta
+    if(window.innerWidth <= 768) {
+        const listEl = document.getElementById('searchResultsList');
+        if (listEl) listEl.classList.add('collapsed');
+    }
+
+    mapFind.flyTo([lat, lng], 21);
+
+    // Funcție robustă care caută repetat markerul până îl găsește (maxim 2 secunde)
+    const tryOpenPopup = (attempts) => {
+        if (attempts <= 0) return;
+        let found = false;
+        if (polygonLayerFind) {
+            polygonLayerFind.eachLayer(layer => {
+                if (layer.spotNumber && String(layer.spotNumber) === String(spotNum)) {
+                    layer.openPopup();
+                    found = true;
+                }
+            });
+        }
+        if (!found) {
+            setTimeout(() => tryOpenPopup(attempts - 1), 200);
+        }
+    };
+
+    // Începem să căutăm după 600ms (pentru a lăsa flyTo să înceapă)
+    setTimeout(() => tryOpenPopup(10), 600);
+};
 
 function findAndShowNearest() {
     // Filter out own spots for the "Find Nearest" logic too
@@ -2058,22 +2212,86 @@ function findAndShowNearest() {
 
         // Zburăm la locul de parcare
         mapFind.flyTo(nearest.center, 21);
-        
-        setTimeout(() => {
-            renderVisiblePolygons(); // Forțează randarea poligoanelor GIS
-            
-            // Găsim layer-ul corespunzător pentru a deschide popup-ul
-            mapFind.eachLayer(layer => {
-                if (layer.feature && layer.feature.properties) {
-                    const props = layer.feature.properties;
-                    const spotNum = String(props.numar || props.zona || '').replace('Loc nominal', '').trim();
-                    if (spotNum === String(nearest.spotNumber)) {
-                        layer.openPopup();
-                    }
-                }
-            });
 
+        const tryOpenPopup = (attempts) => {
+            if (attempts <= 0) return;
+            let found = false;
+            if (polygonLayerFind) {
+                polygonLayerFind.eachLayer(layer => {
+                    if (layer.spotNumber && String(layer.spotNumber) === String(nearest.spotNumber)) {
+                        layer.openPopup();
+                        found = true;
+                    }
+                });
+            }
+            if (!found) {
+                setTimeout(() => tryOpenPopup(attempts - 1), 200);
+            }
+        };
+
+        setTimeout(() => {
+            tryOpenPopup(10);
             showToast(`Găsit! Cel mai apropiat loc (${nearest.spotNumber}) este la ${(nearest.dist * 1000).toFixed(0)}m.`);
-        }, 1200);
+        }, 600);
     }
+}
+
+window.goToTestSpot = (e) => {
+    if (e) e.preventDefault();
+    
+    // Ensure we navigate to the search section
+    navigateTo('#find-spot');
+    
+    // Find the first mock rentable spot in Sector 4
+    const testSpot = appState.spots.find(s => s.status === 'available' && s.isMock);
+    
+    if (!testSpot) {
+        showToast("Nu am găsit niciun loc de test disponibil.", true);
+        return;
+    }
+    
+    // Center and zoom in to mapFind
+    mapFind.setView(testSpot.center, 21);
+    
+    setTimeout(() => {
+        renderVisiblePolygons(); // Force render S4 polygons
+        
+        // Open the popup directly on mapFind for this spot coordinate
+        L.popup({ className: 'custom-popup' })
+            .setLatLng(testSpot.center)
+            .setContent(`
+                <div class="map-popup" style="min-width:180px; padding: 5px;">
+                    <div class="popup-tag" style="background: #3b82f6; color: white; font-size: 0.65rem; margin-bottom: 8px;">
+                        ParkShare Verificat (Loc de Test)
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: white;">Locul ${testSpot.spotNumber}</h3>
+                        <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">${testSpot.address}</p>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 8px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px;">
+                            <span style="color: var(--text-muted);">Tarif:</span> <b style="color: white;">${testSpot.price} RON/h</b>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-block" style="padding: 10px; font-size: 0.9rem; font-weight: 700;" 
+                        onclick="bookSpot(${testSpot.id})">Rezervă Acum</button>
+                </div>
+            `)
+            .openOn(mapFind);
+            
+        showToast(`Harta s-a mutat pe locul de test ${testSpot.spotNumber} din Sectorul 4.`);
+    }, 1000);
+};
+
+// --- PWA Service Worker Registration ---
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+            .then(registration => {
+                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            })
+            .catch(err => {
+                console.warn('ServiceWorker registration failed: ', err);
+            });
+    });
 }
