@@ -185,11 +185,14 @@ function startClock() {
 // --- Navigation ---
 
 function initNavigation() {
-    const navLinks = document.querySelectorAll('.nav-links a, .hero-action-buttons a');
+    const navLinks = document.querySelectorAll('a[href^="#"]');
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             const targetId = link.getAttribute('href');
-            if (targetId.startsWith('#')) {
+            if (targetId && targetId.startsWith('#')) {
+                // Nu prevenim pentru modale dacă folosesc alt sistem, dar pentru navigare e OK
+                if (link.hasAttribute('data-open-modal')) return;
+                
                 e.preventDefault();
                 navigateTo(targetId);
             }
@@ -262,7 +265,35 @@ function navigateTo(targetId) {
 
         // Force map refreshes
         if (targetId === '#list' && typeof mapList !== 'undefined') setTimeout(() => mapList.invalidateSize(), 100);
-        if (targetId === '#find-spot' && typeof mapFind !== 'undefined') setTimeout(() => mapFind.invalidateSize(), 100);
+        if (targetId === '#my-spots' && typeof map !== 'undefined') setTimeout(() => map.invalidateSize(), 100);
+        if (targetId === '#find-spot' && typeof mapFind !== 'undefined') {
+            setTimeout(() => {
+                mapFind.invalidateSize();
+                if (navigator.geolocation && !window.hasCenteredMapFind) {
+                    navigator.geolocation.getCurrentPosition((pos) => {
+                        const lat = pos.coords.latitude;
+                        const lng = pos.coords.longitude;
+                        mapFind.flyTo([lat, lng], 17);
+                        window.hasCenteredMapFind = true;
+                        
+                        if (typeof appState !== 'undefined') {
+                            appState.userLocation = { lat, lng };
+                        }
+                        if (typeof currentSearchCoords !== 'undefined') {
+                            currentSearchCoords = [lat, lng];
+                        }
+                        if (typeof showToast !== 'undefined') {
+                            showToast("Harta a fost centrată pe locația ta.");
+                        }
+                        if (typeof updateSearchResultsList === 'function') {
+                            updateSearchResultsList();
+                        }
+                    }, (err) => {
+                        console.warn("Geolocation error on #find-spot open", err);
+                    }, { timeout: 5000, enableHighAccuracy: true });
+                }
+            }, 100);
+        }
         if (targetId === '#my-spots' && typeof map !== 'undefined') {
             setTimeout(() => {
                 map.invalidateSize();
@@ -277,37 +308,45 @@ function navigateTo(targetId) {
 // --- Authentication UI ---
 
 function renderAuthUI() {
-    const authContainer = document.getElementById('authContainer');
-    if (!authContainer) return;
+    const authContainers = document.querySelectorAll('.authContainer');
+    const adminLis = document.querySelectorAll('.adminNavLi');
+    const mySpotsLis = document.querySelectorAll('.mySpotsNavLi');
 
     if (currentUser) {
         // Restricted Admin Link Visibility
-        const adminLi = document.getElementById('adminNavLi');
-        if (adminLi) adminLi.style.display = (currentUser.username === 'admin') ? 'block' : 'none';
-
-        const mySpotsLi = document.getElementById('mySpotsNavLi');
-        if (mySpotsLi) mySpotsLi.style.display = 'block';
+        adminLis.forEach(li => li.style.display = (currentUser.username === 'admin') ? '' : 'none');
+        mySpotsLis.forEach(li => li.style.display = '');
 
         const avatarUrl = currentUser.avatarBase64 || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.firstName)}&background=3b82f6&color=fff`;
-        authContainer.innerHTML = `
-            <div id="navProfilePill" class="profile-pill" 
-                onclick="document.getElementById('profileModal').classList.add('active')"
-                style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer; background: rgba(255,255,255,0.05); padding: 0.4rem 1rem; border-radius: 30px; border: 1px solid var(--glass-border);">
-                <img src="${avatarUrl}" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;">
-                <span style="font-weight: 600; font-size: 0.85rem;">Salut, ${currentUser.firstName}</span>
-            </div>
-        `;
+        
+        // Ensure wallet balance is initialized
+        if (currentUser.walletBalance === undefined) currentUser.walletBalance = 45;
+
+        authContainers.forEach(container => {
+            container.innerHTML = `
+                <div class="wallet-pill" onclick="document.getElementById('walletModal').classList.add('active'); document.getElementById('walletBalanceDisplay').textContent = currentUser.walletBalance + ' RON';"
+                    style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; background: rgba(245, 158, 11, 0.1); padding: 0.35rem 0.65rem; border-radius: 30px; border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; font-weight: 700; font-size: 0.8rem;" title="Portofel Virtual (Circuit Închis)">
+                    <i data-lucide="wallet" style="width: 14px; height: 14px;"></i> ${currentUser.walletBalance} RON
+                </div>
+                <div class="profile-pill" 
+                    data-open-modal="profileModal"
+                    style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer; background: rgba(255,255,255,0.05); padding: 0.4rem 1rem; border-radius: 30px; border: 1px solid var(--glass-border);">
+                    <img src="${avatarUrl}" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;">
+                    <span style="font-weight: 600; font-size: 0.85rem;" class="hide-mobile">Salut, ${currentUser.firstName}</span>
+                </div>
+            `;
+        });
     } else {
-        const adminLi = document.getElementById('adminNavLi');
-        if (adminLi) adminLi.style.display = 'none';
-        const mySpotsLi = document.getElementById('mySpotsNavLi');
-        if (mySpotsLi) mySpotsLi.style.display = 'none';
-        authContainer.innerHTML = `
-            <div style="display:flex; gap:0.5rem;">
-                <button class="btn btn-outline" data-open-modal="registerModal">Cont Nou</button>
-                <button class="btn btn-primary" data-open-modal="loginModal">Autentificare</button>
-            </div>
-        `;
+        adminLis.forEach(li => li.style.display = 'none');
+        mySpotsLis.forEach(li => li.style.display = 'none');
+        authContainers.forEach(container => {
+            container.innerHTML = `
+                <div style="display:flex; gap:0.5rem;">
+                    <button class="btn btn-outline hide-mobile" data-open-modal="registerModal">Cont Nou</button>
+                    <button class="btn btn-primary" data-open-modal="loginModal"><i data-lucide="user" class="mobile-only" style="display:none;"></i> <span class="hide-mobile">Autentificare</span></button>
+                </div>
+            `;
+        });
     }
 }
 
@@ -316,11 +355,19 @@ document.addEventListener('click', (e) => {
     const target = e.target.closest('[data-open-modal]');
     if (target) {
         const modalId = target.getAttribute('data-open-modal');
+        
+        if (modalId === 'profileModal' && currentUser) {
+            document.getElementById('profFirstName').value = currentUser.firstName || '';
+            document.getElementById('profLastName').value = currentUser.lastName || '';
+            document.getElementById('profPhone').value = currentUser.phone || currentUser.contact || '';
+            document.getElementById('profCarPlate').value = currentUser.carPlate || '';
+        }
+        
         document.getElementById(modalId)?.classList.add('active');
     }
     
     // Closer logic
-    if (e.target.closest('.modal-overlay') && !e.target.closest('.modal-card')) {
+    if (e.target.closest('.modal-overlay') && !e.target.closest('.modal-card') && !e.target.closest('.modal-content')) {
         e.target.closest('.modal-overlay').classList.remove('active');
     }
     if (e.target.closest('.btn-icon') && e.target.closest('.modal-header')) {
@@ -332,12 +379,27 @@ document.addEventListener('click', (e) => {
 
 document.getElementById('registerForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const email = document.getElementById('regEmail').value.trim();
+    const phone = document.getElementById('regPhone').value.trim();
+    const password = document.getElementById('regPassword').value;
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return showToast("Adresa de email nu este validă!", true);
+    }
+    if (!/^07\d{8}$/.test(phone)) {
+        return showToast("Numărul de telefon trebuie să înceapă cu 07 și să aibă exact 10 cifre!", true);
+    }
+    if (password.length < 8 || !/\d/.test(password)) {
+        return showToast("Parola trebuie să aibă minim 8 caractere și să conțină cel puțin o cifră!", true);
+    }
+
     const user = {
-        firstName: document.getElementById('regFirstName').value,
-        lastName: document.getElementById('regLastName').value,
-        username: document.getElementById('regUsername').value,
-        contact: document.getElementById('regContact').value,
-        password: document.getElementById('regPassword').value,
+        firstName: document.getElementById('regFirstName').value.trim(),
+        lastName: document.getElementById('regLastName').value.trim(),
+        username: document.getElementById('regUsername').value.trim(),
+        email: email,
+        phone: phone,
+        password: password,
         avatarBase64: ""
     };
 
@@ -379,7 +441,7 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
     try {
         const res = await fetch(USERS_URL);
         const users = res.ok ? (await res.json() || []) : [];
-        const user = users.find(u => (u.username === contact || u.contact === contact) && u.password === pass);
+        const user = users.find(u => (u.username === contact || u.contact === contact || u.email === contact) && u.password === pass);
         if (user) {
             currentUser = user;
             localStorage.setItem('parkshare_user', JSON.stringify(user));
@@ -390,6 +452,43 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
             showToast("Date incorecte!", true);
         }
     } catch (err) { showToast("Eroare la conectare", true); }
+});
+
+document.getElementById('profileForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentUser) return;
+
+    const newFirstName = document.getElementById('profFirstName').value.trim();
+    const newLastName = document.getElementById('profLastName').value.trim();
+    const newPhone = document.getElementById('profPhone').value.trim();
+    const newCarPlate = document.getElementById('profCarPlate').value.trim();
+
+    if (!/^07\d{8}$/.test(newPhone)) {
+        return showToast("Numărul de telefon trebuie să înceapă cu 07 și să aibă exact 10 cifre!", true);
+    }
+
+    currentUser.firstName = newFirstName;
+    currentUser.lastName = newLastName;
+    currentUser.phone = newPhone;
+    currentUser.carPlate = newCarPlate;
+
+    try {
+        const res = await fetch(USERS_URL);
+        let users = res.ok ? (await res.json() || []) : [];
+        
+        // Update user in DB
+        users = users.map(u => u.username === currentUser.username ? currentUser : u);
+        
+        await fetch(USERS_URL, { method: 'POST', body: JSON.stringify(users) });
+        
+        localStorage.setItem('parkshare_user', JSON.stringify(currentUser));
+        
+        document.getElementById('profileModal').classList.remove('active');
+        renderAuthUI();
+        showToast("Profil actualizat cu succes!");
+    } catch (err) { 
+        showToast("Eroare la salvarea profilului", true); 
+    }
 });
 
 document.getElementById('logoutBtn')?.addEventListener('click', () => {
@@ -521,11 +620,27 @@ function renderMySpots() {
                         <span style="color: var(--text-muted);">Interval:</span>
                         <b style="color: white;">${spot.availability?.start || 'N/A'} - ${spot.availability?.end || 'N/A'}</b>
                     </div>
+                    </div>
                 </div>
-                <button class="btn btn-sm btn-primary btn-block" style="background: #f59e0b; border-color: #f59e0b;" 
-                    onclick="map.flyTo([${spot.center}], 20); setTimeout(() => renderVisiblePolygons(), 500);">
-                    Vezi Drumul spre Loc
-                </button>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                    <a href="tel:0700000000" class="btn btn-sm btn-outline" style="border-color: #22c55e; color: #22c55e; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="phone" style="width: 14px; height: 14px;"></i> Sună
+                    </a>
+                    <button class="btn btn-sm btn-outline" onclick="openChat('${spot.owner}')" style="display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="message-circle" style="width: 14px; height: 14px;"></i> Mesaj
+                    </button>
+                </div>
+                <a href="https://www.google.com/maps/dir/?api=1&destination=${spot.center[0]},${spot.center[1]}" target="_blank" class="btn btn-sm btn-primary btn-block" style="background: #f59e0b; border-color: #f59e0b; margin-top: 0.5rem; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
+                    <i data-lucide="navigation" style="width: 14px; height: 14px;"></i> Vezi Drumul spre Loc
+                </a>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button class="btn btn-sm btn-outline btn-block" style="border-color: var(--glass-border); color: var(--text-muted); display: flex; justify-content: center; align-items: center; gap: 0.5rem;" onclick="cancelBooking(${spot.id})">
+                        <i data-lucide="x-circle" style="width: 14px; height: 14px;"></i> Anulează
+                    </button>
+                    <button class="btn btn-sm btn-outline btn-block" style="border-color: #ef4444; color: #ef4444; background: rgba(239, 68, 68, 0.05); display: flex; justify-content: center; align-items: center; gap: 0.5rem;" onclick="openIncidentModal(${spot.id})">
+                        <i data-lucide="alert-triangle" style="width: 14px; height: 14px;"></i> Alertă Abuz
+                    </button>
+                </div>
             </div>`;
         });
     }
@@ -539,13 +654,18 @@ function renderMySpots() {
 
         myOwnedSpots.forEach(spot => {
             const isBooked = spot.status === 'booked';
+            const isAvailable = spot.status === 'available';
             const statusClass = spot.status === 'pending_verification' ? 'pending'
-                : (spot.status === 'verified' || isBooked) ? 'verified' : 'rejected';
-            const statusLabel = spot.status === 'pending_verification' ? '⏳ În așteptare'
-                : isBooked ? '✅ Aprobat (Rezervat)' : (spot.status === 'verified' ? '✅ Aprobat' : '❌ Respins');
+                : (spot.status === 'verified' || isAvailable || isBooked) ? 'verified' : 'rejected';
+            
+            let statusLabel = '❌ Respins';
+            if (spot.status === 'pending_verification') statusLabel = '⏳ În așteptare';
+            else if (isBooked) statusLabel = '✅ Aprobat (Rezervat)';
+            else if (isAvailable) statusLabel = '✅ Activ (Listat)';
+            else if (spot.status === 'verified') statusLabel = '✅ Aprobat';
 
             html += `
-            <div class="glass-card" style="padding: 1.5rem; position: relative; display: flex; flex-direction: column; gap: 1rem; border-left: 4px solid ${isBooked ? '#f59e0b' : 'transparent'};">
+            <div class="glass-card" style="padding: 1.5rem; position: relative; display: flex; flex-direction: column; gap: 1rem; border-left: 4px solid ${isBooked ? '#f59e0b' : (isAvailable ? '#3b82f6' : 'transparent')};">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div>
                         <h3 style="color: var(--primary); margin: 0;">Loc ${spot.spotNumber}</h3>
@@ -559,9 +679,11 @@ function renderMySpots() {
                         <span style="color: var(--text-muted);">Tarif:</span>
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
                             <span style="font-weight: 600; color: white;">${spot.price} RON/oră</span>
+                            ${isBooked ? '' : `
                             <button class="btn-icon" onclick="editSpotPrice(${spot.id})" style="padding: 2px; height: 24px; width: 24px;" title="Modifică Tarif">
                                 <i data-lucide="edit-2" style="width: 14px; height: 14px; color: var(--primary);"></i>
                             </button>
+                            `}
                         </div>
                     </div>
                     <div style="display: flex; justify-content: space-between;">
@@ -569,9 +691,15 @@ function renderMySpots() {
                         <span>${new Date(spot.listedAt).toLocaleDateString('ro-RO')}</span>
                     </div>
                     
-                    ${isBooked ? `
+                    ${isBooked || isAvailable ? `
                     <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.05);">
-                        <div style="color: #f59e0b; font-weight: 700; font-size: 0.8rem; margin-bottom: 4px;">📅 LOC REZERVAT</div>
+                        <div style="color: ${isBooked ? '#f59e0b' : '#3b82f6'}; font-weight: 700; font-size: 0.8rem; margin-bottom: 4px;">
+                            ${isBooked ? '📅 LOC REZERVAT' : '📅 LISTAT ACTIV'}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px;">
+                            <span style="color: var(--text-muted);">Data:</span>
+                            <span style="font-weight: 600; color: white;">${spot.availability?.date ? new Date(spot.availability.date).toLocaleDateString('ro-RO') : 'Azi'}</span>
+                        </div>
                         <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
                             <span style="color: var(--text-muted);">Interval:</span>
                             <span style="font-weight: 600; color: white;">${spot.availability?.start || 'N/A'} - ${spot.availability?.end || 'N/A'}</span>
@@ -581,13 +709,21 @@ function renderMySpots() {
                 </div>
 
                 <div style="display: flex; gap: 0.5rem; margin-top: auto;">
-                    <button class="btn btn-sm btn-outline btn-block" onclick="map.flyTo([${spot.center}], 18); setTimeout(() => renderVisiblePolygons(), 500);">
-                        Vezi pe Hartă
+                    <button class="btn btn-sm btn-primary btn-block" style="background: ${isBooked ? '#475569' : '#3b82f6'}; border-color: ${isBooked ? '#475569' : '#3b82f6'}; ${isBooked ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isBooked ? 'disabled' : `onclick="openListSpotModal(${spot.id})"`} title="${isBooked ? 'Nu poți modifica un loc cât timp este rezervat.' : ''}">
+                        <i data-lucide="clock" style="width: 14px; height: 14px; margin-right: 4px;"></i> ${isBooked ? 'Indisponibil' : 'Listează Acum'}
                     </button>
-                    <button class="btn btn-sm btn-outline btn-block" style="border-color: #ef4444; color: #ef4444;" onclick="deleteSpot(${spot.id})">
+                    <button class="btn btn-sm btn-outline btn-block" style="border-color: #ef4444; color: #ef4444; ${isBooked ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isBooked ? 'disabled' : `onclick="deleteSpot(${spot.id})"`} title="${isBooked ? 'Nu poți șterge un loc rezervat.' : ''}">
                         Șterge
                     </button>
                 </div>
+                ${isBooked ? `
+                <button class="btn btn-sm btn-primary btn-block" style="margin-top: 0.5rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem;" onclick="openChat('${spot.bookedBy || 'Chiriaș'}')">
+                    <i data-lucide="message-circle" style="width: 14px; height: 14px;"></i> Mesaj Chiriaș
+                </button>
+                ` : ''}
+                <a href="https://www.google.com/maps/dir/?api=1&destination=${spot.center[0]},${spot.center[1]}" target="_blank" class="btn btn-sm btn-outline btn-block" style="margin-top: 0.5rem; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
+                    <i data-lucide="navigation" style="width: 14px; height: 14px;"></i> Vezi Drumul spre Loc
+                </a>
             </div>`;
         });
     }
@@ -617,6 +753,7 @@ function startAllCountdowns() {
             const endTime = new Date(year, month - 1, day, endH, endM, 0, 0);
 
             const labelEl = document.getElementById(`timer-label-${spot.id}`);
+            let cardStatus = timerEl.closest('.glass-card').querySelector('.status-text-top');
 
             // 1. VIITOR: Încă nu a început ora de rezervare
             if (now < startTime) {
@@ -629,8 +766,6 @@ function startAllCountdowns() {
                 const s = Math.floor((diff % 60000) / 1000);
                 timerEl.textContent = `${h > 0 ? h + 'h ' : ''}${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
                 
-                // Update the card status text if it exists
-                const cardStatus = timerEl.closest('.glass-card').querySelector('.status-text-top');
                 if (cardStatus) {
                     cardStatus.textContent = "URMEAZĂ";
                     cardStatus.style.color = "#3b82f6";
@@ -651,7 +786,7 @@ function startAllCountdowns() {
                 const s = Math.floor((diff % 60000) / 1000);
                 timerEl.textContent = `${h > 0 ? h + 'h ' : ''}${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
 
-                const cardStatus = timerEl.closest('.glass-card').querySelector('.status-text-top');
+
                 if (cardStatus) {
                     cardStatus.textContent = "ACTIVĂ";
                     cardStatus.style.color = "#4ade80";
@@ -663,10 +798,19 @@ function startAllCountdowns() {
             if (labelEl) labelEl.textContent = "STATUS:";
             timerEl.textContent = "EXPIRAT";
             timerEl.style.color = "#ef4444";
-            const cardStatus = timerEl.closest('.glass-card').querySelector('.status-text-top');
+
             if (cardStatus) {
                 cardStatus.textContent = "EXPIRAT";
                 cardStatus.style.color = "#ef4444";
+            }
+            
+            if (spot.status === 'booked') {
+                spot.status = 'available';
+                delete spot.bookedBy;
+                delete spot.bookedAt;
+                saveState();
+                window.sendPushNotification("Timp Expirat", `Rezervarea pentru locul ${spot.spotNumber} a expirat!`);
+                setTimeout(() => renderMySpots(), 2000);
             }
         };
 
@@ -693,22 +837,63 @@ window.confirmPriceChange = async () => {
 
     const newPrice = parseFloat(document.getElementById('newPriceInput').value);
     
-    if (isNaN(newPrice) || newPrice <= 0) {
-        showToast("Te rog introdu un preț valid!", true);
-        return;
-    }
-
-    if (newPrice > 5) {
-        showToast("Eroare: Prețul maxim permis este de 5 RON/oră!", true);
+    if (isNaN(newPrice) || newPrice < 1 || newPrice > 5) {
+        showToast("Prețul trebuie să fie între 1 și 5 RON/oră.", true);
         return;
     }
 
     spot.price = newPrice;
     await saveState();
+    
     document.getElementById('editPriceModal').classList.remove('active');
     renderMySpots();
     renderVisiblePolygons();
-    showToast("Tarif actualizat cu succes! ✓");
+    showToast("Tarif actualizat cu succes!");
+};
+
+let currentListingSpotId = null;
+
+window.openListSpotModal = (id) => {
+    const spot = appState.spots.find(s => s.id === id);
+    if (!spot) return;
+
+    currentListingSpotId = id;
+    document.getElementById('listSpotInfo').textContent = `Loc ${spot.spotNumber} - ${spot.address}`;
+    
+    // Set default date to today using local timezone
+    const now = new Date();
+    const today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    document.getElementById('listSpotDate').value = today;
+    
+    document.getElementById('listSpotModal').classList.add('active');
+};
+
+window.confirmListSpot = async () => {
+    const spot = appState.spots.find(s => s.id === currentListingSpotId);
+    if (!spot) return;
+
+    const dateVal = document.getElementById('listSpotDate').value;
+    const startVal = document.getElementById('listSpotStart').value;
+    const endVal = document.getElementById('listSpotEnd').value;
+
+    if (!dateVal || !startVal || !endVal) {
+        showToast("Te rog completează toate câmpurile!", true);
+        return;
+    }
+
+    spot.availability = {
+        date: dateVal,
+        start: startVal,
+        end: endVal
+    };
+    spot.status = 'available'; // Mark it as actively listed for rent
+
+    await saveState();
+    
+    document.getElementById('listSpotModal').classList.remove('active');
+    renderMySpots();
+    renderVisiblePolygons();
+    showToast("Locul a fost listat cu succes!");
 };
 
 window.deleteSpot = async (id) => {
@@ -846,7 +1031,39 @@ function showToast(msg, isError = false) {
     }, 4000);
 }
 
+// --- Push Notifications ---
+window.requestNotificationPermission = async () => {
+    if (!('Notification' in window)) return false;
+    if (Notification.permission === 'granted') return true;
+    if (Notification.permission !== 'denied') {
+        const permission = await Notification.requestPermission();
+        return permission === 'granted';
+    }
+    return false;
+};
 
+window.sendPushNotification = async (title, body) => {
+    const hasPermission = await window.requestNotificationPermission();
+    if (hasPermission) {
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            try {
+                const reg = await navigator.serviceWorker.ready;
+                reg.showNotification(title, {
+                    body: body,
+                    vibrate: [200, 100, 200, 100, 200],
+                    requireInteraction: true
+                });
+            } catch (e) {
+                new Notification(title, { body: body });
+            }
+        } else {
+            new Notification(title, { body: body });
+        }
+    } else {
+        // Fallback
+        showToast(title + " - " + body);
+    }
+};
 // Function to initialize the map
 function initMap() {
     map = L.map('mapDashboard', {
@@ -1013,6 +1230,17 @@ async function loadS4Polygons() {
         let response;
         let success = false;
         let diagnosticMsg = "Unknown";
+        
+        // 0. Workaround for file:// protocol without a server
+        if (window.S4_POINTS) {
+            console.log("Using pre-loaded S4_POINTS from file:// protocol workaround.");
+            const data = window.S4_POINTS;
+            allPolygons = data.features.filter(f => [0, 1, 2, 3, 4].includes(f.properties.ocupat));
+            console.log(`Loaded ${allPolygons.length} Sector 4 polygons (filtered) from memory.`);
+            showToast(`S-au încărcat ${allPolygons.length} parcări nominale/handicap.`);
+            renderVisiblePolygons();
+            return;
+        }
         
         // Fetch a specific file name that contains 'nominatim' to bypass the old stuck Service Worker, and has NO query string to avoid 404s
         try {
@@ -1427,10 +1655,18 @@ window.prevWizardStep = (step) => {
     }
 };
 
-window.handlePdfSelect = (input) => {
+window.handlePdfSelect = (input, source) => {
     if (input.files[0]) {
+        // Clear the other input so we only have one file
+        if (source === 'photo') {
+            document.getElementById('contractPdf').value = '';
+        } else if (source === 'file') {
+            const photoInput = document.getElementById('contractPhoto');
+            if (photoInput) photoInput.value = '';
+        }
+
         const el = document.getElementById('pdfFileName');
-        el.textContent = '✓ Fișier: ' + input.files[0].name;
+        el.textContent = '✓ Selectat: ' + input.files[0].name;
         el.style.display = 'block';
         document.getElementById('pdfDropzone').style.borderColor = '#22c55e';
         const btnNext2 = document.getElementById('btnNext2');
@@ -1585,8 +1821,24 @@ window.confirmBooking = async () => {
     document.getElementById('bookingModal').classList.remove('active');
     renderVisiblePolygons();
     renderMySpots();
-    showToast(`Succes! Locul ${spot.spotNumber} a fost rezervat până la ${endVal}. ✓`);
+    window.sendPushNotification("Rezervare Confirmată", `Ai rezervat cu succes locul ${spot.spotNumber} până la ora ${endVal}. ✓`);
     navigateTo('#my-spots');
+};
+
+window.cancelBooking = async (spotId) => {
+    if (!confirm("Ești sigur că vrei să anulezi această rezervare?")) return;
+    
+    const spot = appState.spots.find(s => s.id === spotId);
+    if (!spot) return;
+
+    spot.status = 'available';
+    delete spot.bookedBy;
+    delete spot.bookedAt;
+    
+    await saveState();
+    renderMySpots();
+    renderVisiblePolygons();
+    showToast("Rezervare anulată cu succes!");
 };
 
 
@@ -1639,8 +1891,11 @@ function initListForm() {
             }
 
             const pdfInput = document.getElementById('contractPdf');
-            if (!pdfInput || !pdfInput.files[0]) {
-                showToast("Încarcă contractul PDF înainte de a trimite!", true);
+            const photoInput = document.getElementById('contractPhoto');
+            const selectedFile = (pdfInput && pdfInput.files[0]) || (photoInput && photoInput.files[0]);
+            
+            if (!selectedFile) {
+                showToast("Încarcă contractul (PDF sau Poză) înainte de a trimite!", true);
                 return;
             }
 
@@ -1656,7 +1911,7 @@ function initListForm() {
             const address = document.getElementById('address').value || `Loc nominal ${spotNum}, Sector 4, București`;
 
             // Read PDF as base64
-            const pdfFile = pdfInput.files[0];
+            const pdfFile = selectedFile;
             showToast("Se procesează fișierul...");
 
             const pdfBase64 = await new Promise((resolve, reject) => {
@@ -2295,3 +2550,309 @@ if ('serviceWorker' in navigator) {
             });
     });
 }
+
+// --- PWA Install Prompt ---
+let deferredPrompt;
+const pwaBanner = document.getElementById('pwaInstallBanner');
+const pwaInstallBtn = document.getElementById('pwaInstallBtn');
+const pwaCancelBtn = document.getElementById('pwaCancelBtn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent the mini-infobar from appearing on mobile
+    e.preventDefault();
+    // Stash the event so it can be triggered later.
+    deferredPrompt = e;
+    // Update UI notify the user they can install the PWA
+    if (pwaBanner) {
+        pwaBanner.style.display = 'flex';
+        // Add a slight delay for better UX on initial load
+        pwaBanner.style.animation = 'slideUpPwa 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards 1s';
+    }
+});
+
+if (pwaInstallBtn) {
+    pwaInstallBtn.addEventListener('click', async () => {
+        if (pwaBanner) pwaBanner.style.display = 'none';
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to the install prompt: ${outcome}`);
+            deferredPrompt = null;
+        }
+    });
+}
+
+if (pwaCancelBtn) {
+    pwaCancelBtn.addEventListener('click', () => {
+        if (pwaBanner) pwaBanner.style.display = 'none';
+    });
+}
+
+// --- Chat Logic ---
+let currentChatUser = null;
+let chatPollInterval = null;
+
+function getChatThreadId(user1, user2) {
+    return [user1, user2].sort().join('_');
+}
+
+async function loadMessages(ownerUsername, autoScroll = false) {
+    if (!currentUser) return;
+    const threadId = getChatThreadId(currentUser.username, ownerUsername);
+    const msgsContainer = document.getElementById('chatMessages');
+    
+    try {
+        const res = await fetch("https://kvdb.io/77TAwJmXQUH7pgjBJgGx1x/chat_" + threadId + "?t=" + Date.now());
+        let messages = [];
+        if (res.ok) {
+            messages = await res.json() || [];
+        }
+        
+        let html = '';
+        messages.forEach(m => {
+            const isMe = m.sender === currentUser.username;
+            const align = isMe ? 'flex-end' : 'flex-start';
+            const bg = isMe ? 'var(--primary)' : 'rgba(255,255,255,0.1)';
+            const border = isMe ? 'none' : '1px solid var(--glass-border)';
+            const radius = isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px';
+            const textAlign = isMe ? 'right' : 'left';
+            
+            html += `
+                <div style="align-self: ${align}; background: ${bg}; border: ${border}; color: white; padding: 0.75rem 1rem; border-radius: ${radius}; max-width: 80%;">
+                    <p style="margin: 0; font-size: 0.9rem;">${m.text}</p>
+                    <span style="font-size: 0.65rem; color: ${isMe ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)'}; display: block; text-align: ${textAlign}; margin-top: 4px;">${m.time}</span>
+                </div>
+            `;
+        });
+        
+        // Prevent clearing innerHTML if not changed, to avoid flicker
+        if (msgsContainer.innerHTML.length !== html.length) {
+            const isAtBottom = msgsContainer.scrollHeight - msgsContainer.scrollTop <= msgsContainer.clientHeight + 50;
+            msgsContainer.innerHTML = html;
+            if (autoScroll || isAtBottom) {
+                msgsContainer.scrollTop = msgsContainer.scrollHeight;
+            }
+        }
+    } catch (e) {
+        console.error("Eroare la incarcare mesaje", e);
+    }
+}
+
+window.openChat = (ownerUsername) => {
+    currentChatUser = ownerUsername;
+    document.getElementById('chatOwnerName').textContent = ownerUsername;
+    document.getElementById('chatModal').classList.add('active');
+    
+    const msgsContainer = document.getElementById('chatMessages');
+    msgsContainer.innerHTML = '<div style="color: white; text-align: center; margin-top: 2rem; font-size: 0.9rem;">Se încarcă mesajele...</div>';
+    
+    loadMessages(ownerUsername, true);
+    
+    // Polling every 1.5 seconds for live chat effect
+    if (chatPollInterval) clearInterval(chatPollInterval);
+    chatPollInterval = setInterval(() => {
+        if (currentChatUser) {
+            loadMessages(currentChatUser, false);
+        }
+    }, 1500);
+};
+
+window.closeChat = () => {
+    currentChatUser = null;
+    if (chatPollInterval) clearInterval(chatPollInterval);
+    document.getElementById('chatModal').classList.remove('active');
+};
+
+window.sendChatMessage = async () => {
+    if (!currentChatUser || !currentUser) return;
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if (!text) return;
+    
+    input.value = ''; // clear immediately
+    
+    const time = new Date().toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
+    const msgObj = { sender: currentUser.username, text, time };
+    const threadId = getChatThreadId(currentUser.username, currentChatUser);
+    
+    try {
+        const res = await fetch("https://kvdb.io/77TAwJmXQUH7pgjBJgGx1x/chat_" + threadId + "?t=" + Date.now());
+        let messages = [];
+        if (res.ok) messages = await res.json() || [];
+        messages.push(msgObj);
+        
+        await fetch("https://kvdb.io/77TAwJmXQUH7pgjBJgGx1x/chat_" + threadId, {
+            method: 'POST',
+            body: JSON.stringify(messages)
+        });
+        
+        loadMessages(currentChatUser, true);
+    } catch (e) {
+        console.error(e);
+    }
+};
+
+// --- Wallet Logic (Circuit Financiar Închis) ---
+window.payTaxesS4 = () => {
+    const btn = document.getElementById('btnPayTaxes');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i data-lucide="loader" class="spin"></i> Se procesează...';
+    btn.disabled = true;
+    
+    setTimeout(() => {
+        if (currentUser) {
+            currentUser.walletBalance = 0;
+            localStorage.setItem('parkshare_user', JSON.stringify(currentUser));
+            document.getElementById('walletBalanceDisplay').textContent = '0 RON';
+            // Also update the pill if it's rendered
+            renderAuthUI();
+        }
+        
+        btn.innerHTML = '<i data-lucide="check-circle"></i> Transfer Efectuat';
+        btn.style.background = '#10b981';
+        btn.style.borderColor = '#10b981';
+        
+        showToast("Transfer efectuat către DGITL Sector 4. Fondurile au fost virate în contul de taxe locale.", false);
+        
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            btn.style.background = '';
+            btn.style.borderColor = '';
+            document.getElementById('walletModal').classList.remove('active');
+        }, 3000);
+    }, 1500);
+};
+
+// --- Incident Management Logic ---
+window.handleIncidentPhoto = (input) => {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('incidentPhotoImg').src = e.target.result;
+            document.getElementById('incidentDropzoneContent').style.display = 'none';
+            document.getElementById('incidentPhotoPreview').style.display = 'block';
+            document.getElementById('incidentDropzone').style.borderColor = '#10b981';
+            document.getElementById('incidentDropzone').style.borderStyle = 'solid';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+};
+
+window.openIncidentModal = (spotId) => {
+    document.getElementById('incidentSpotId').value = spotId;
+    // Reset the dropzone
+    document.getElementById('incidentDropzoneContent').style.display = '';
+    document.getElementById('incidentPhotoPreview').style.display = 'none';
+    document.getElementById('incidentDropzone').style.borderColor = 'rgba(255,255,255,0.2)';
+    document.getElementById('incidentDropzone').style.borderStyle = 'dashed';
+    document.getElementById('incidentPhoto').value = '';
+    document.getElementById('incidentModal').classList.add('active');
+};
+
+window.submitIncidentReport = async () => {
+    const spotId = parseInt(document.getElementById('incidentSpotId').value);
+    const spot = appState.spots.find(s => s.id === spotId);
+    
+    const btn = document.getElementById('btnSubmitIncident');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i data-lucide="loader" class="spin"></i> Se trimite alerta...';
+    btn.disabled = true;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    
+    // Simulate network delay for realistic UX
+    await new Promise(r => setTimeout(r, 1500));
+    
+    if (spot) {
+        spot.status = 'available';
+        spot.bookedBy = null;
+        await saveState();
+    }
+    
+    // Add refund to wallet
+    if (currentUser) {
+        currentUser.walletBalance = (currentUser.walletBalance || 0) + 5;
+        localStorage.setItem('parkshare_user', JSON.stringify(currentUser));
+    }
+    
+    // Close modal
+    document.getElementById('incidentModal').classList.remove('active');
+    
+    // Reset button
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    
+    // Update UI safely
+    try { renderAuthUI(); } catch(e) { console.error("renderAuthUI error", e); }
+    try { renderSpotsList(); } catch(e) { console.error("renderSpotsList error", e); }
+    try { if (window.location.hash === '#my-spots') renderMySpots(); } catch(e) { console.error("renderMySpots error", e); }
+    try { if (typeof lucide !== 'undefined') lucide.createIcons(); } catch(e) {}
+    
+    showToast("Alertă trimisă oficial către Poliția Locală S4. Contravaloarea de 5 RON a fost rambursată integral în portofel.", false);
+};
+
+// --- Mobile UX Polish (Punctul 3) ---
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Gestionarea Tastaturii Virtuale (Scroll into view on focus)
+    if (window.innerWidth <= 1024) {
+        document.addEventListener('focusin', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                setTimeout(() => {
+                    e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+            }
+        });
+    }
+
+    // 2. Gesturi prin Swipe pentru navigare rapida
+    let touchStartX = 0;
+    let touchEndX = 0;
+    let touchStartY = 0;
+    let touchEndY = 0;
+
+    const navSections = ['#hero', '#find-spot', '#list', '#my-spots'];
+
+    document.addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+    }, {passive: true});
+
+    document.addEventListener('touchend', e => {
+        // Ignoram swipe-ul daca suntem pe harta, in modale, formulare, sau in lista de swipe orizontal
+        if (e.target.closest('.leaflet-container') || e.target.closest('.modal-card') || e.target.closest('form') || e.target.closest('.list-card')) {
+            return;
+        }
+
+        touchEndX = e.changedTouches[0].screenX;
+        touchEndY = e.changedTouches[0].screenY;
+        handleSwipeNavigation();
+    }, {passive: true});
+
+    function handleSwipeNavigation() {
+        const xDiff = touchStartX - touchEndX;
+        const yDiff = touchStartY - touchEndY;
+        
+        // Verifica daca a fost o glisare orizontala dominanta
+        if (Math.abs(xDiff) > 80 && Math.abs(yDiff) < 60) {
+            let currentHash = window.location.hash;
+            // Daca hash-ul lipseste sau nu este in lista (ex. cand pagina abia se incarca)
+            if (!currentHash || !navSections.includes(currentHash)) {
+                // Incearca sa gasesti sectiunea activa
+                const activeSec = document.querySelector('main > section.active');
+                currentHash = activeSec ? '#' + activeSec.id : '#hero';
+            }
+
+            const currentIndex = navSections.indexOf(currentHash);
+            if (currentIndex === -1) return;
+
+            if (xDiff > 0 && currentIndex < navSections.length - 1) {
+                // Swipe Left -> Next Section
+                navigateTo(navSections[currentIndex + 1]);
+            } else if (xDiff < 0 && currentIndex > 0) {
+                // Swipe Right -> Prev Section
+                navigateTo(navSections[currentIndex - 1]);
+            }
+        }
+    }
+});

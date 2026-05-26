@@ -33,10 +33,10 @@
     <style>
         /* INLINE CSS TO BYPASS CACHE */
         @media (max-width: 992px) {
-            #list {
-                margin-top: -60px !important;
-                padding-top: 75px !important;
-                padding-bottom: 85px !important;
+            #list.active {
+                margin-top: calc(-60px - env(safe-area-inset-top, 0px)) !important;
+                padding-top: calc(75px + env(safe-area-inset-top, 0px)) !important;
+                padding-bottom: calc(85px + env(safe-area-inset-bottom, 0px)) !important;
                 padding-left: 0 !important;
                 padding-right: 0 !important;
                 margin-left: 0 !important;
@@ -573,7 +573,7 @@
                 padding: 0.5rem; width: 100%; transition: all 0.2s; gap: 4px;
             }
             .bottom-nav .nav-item i { width: 22px; height: 22px; }
-            .bottom-nav .nav-item.active, .bottom-nav .nav-item:hover { color: var(--primary); }
+            .bottom-nav .nav-item.active { color: var(--primary); }
             
             /* Fix mobile clock overflow */
             .mobile-top-header .digital-clock {
@@ -740,6 +740,43 @@
 <body>
     <div class="global-bg"></div>
 
+    <!-- PWA Install Banner -->
+    <div id="pwaInstallBanner" class="pwa-banner" style="display: none;">
+        <div class="pwa-banner-content">
+            <i data-lucide="smartphone" class="pwa-icon"></i>
+            <div class="pwa-text">
+                <h4>Aplicație Nativă</h4>
+                <p>Adaugă ParkShare pe ecranul principal pentru acces rapid și funcții offline!</p>
+            </div>
+        </div>
+        <div class="pwa-actions">
+            <button class="btn btn-sm btn-outline" id="pwaCancelBtn" style="padding: 0.5rem 1rem;">Nu acum</button>
+            <button class="btn btn-sm btn-primary" id="pwaInstallBtn" style="padding: 0.5rem 1rem;">Instalează</button>
+        </div>
+    </div>
+    <style>
+        .pwa-banner {
+            position: fixed; bottom: 85px; left: 15px; right: 15px; z-index: 9999;
+            background: rgba(15,23,42,0.95); backdrop-filter: blur(10px);
+            border: 1px solid var(--primary); border-radius: 16px;
+            padding: 1rem; box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 15px rgba(59,130,246,0.3);
+            display: flex; flex-direction: column; gap: 1rem;
+            animation: slideUpPwa 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes slideUpPwa {
+            from { transform: translateY(150%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .pwa-banner-content { display: flex; align-items: center; gap: 1rem; }
+        .pwa-icon { width: 42px; height: 42px; color: var(--primary); flex-shrink: 0; padding: 8px; background: rgba(59,130,246,0.1); border-radius: 12px; }
+        .pwa-text h4 { margin: 0 0 4px 0; color: white; font-size: 1.05rem; font-weight: 700; }
+        .pwa-text p { margin: 0; color: var(--text-muted); font-size: 0.85rem; line-height: 1.4; }
+        .pwa-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
+        @media (min-width: 768px) {
+            .pwa-banner { bottom: 20px; left: auto; right: 20px; width: 400px; }
+        }
+    </style>
+
     <!-- Welcome / Onboarding Modal (FULLSCREEN CENTERED) -->
     <div id="welcomeModal" class="welcome-overlay">
         <div class="welcome-card-centered">
@@ -782,12 +819,12 @@
             <ul class="nav-links">
                 <li><a href="#find-spot" class="nav-btn">Caută Loc</a></li>
                 <li><a href="#list" class="nav-btn">Oferă Loc</a></li>
-                <li id="mySpotsNavLi" style="display: none;"><a href="#my-spots" class="nav-btn">Locurile Mele</a></li>
-                <li id="adminNavLi" style="display: none;"><a href="#admin" class="nav-btn" style="color: #fbbf24; font-weight: 700;">Admin</a></li>
+                <li class="mySpotsNavLi" style="display: none;"><a href="#my-spots" class="nav-btn">Locurile Mele</a></li>
+                <li class="adminNavLi" style="display: none;"><a href="#admin" class="nav-btn" style="color: #fbbf24; font-weight: 700;">Admin</a></li>
             </ul>
             <div class="nav-extra">
                 <div id="digitalClock" class="digital-clock glass-card">00:00:00</div>
-                <div id="authContainer" style="display: flex; gap: 0.5rem;">
+                <div class="authContainer" style="display: flex; gap: 0.5rem;">
                     <button class="btn btn-outline" data-open-modal="registerModal">Cont Nou</button>
                     <button class="btn btn-primary" data-open-modal="loginModal">Autentificare</button>
                 </div>
@@ -805,7 +842,7 @@
         </div>
         <div class="nav-extra">
             <div id="digitalClock" class="digital-clock glass-card">00:00:00</div>
-            <div id="authContainer" style="display: flex; gap: 0.5rem;">
+            <div class="authContainer" style="display: flex; gap: 0.5rem;">
                 <!-- Desktop buttons -->
                 <button class="btn btn-outline hide-mobile" data-open-modal="registerModal">Cont Nou</button>
                 <!-- Mobile login icon -->
@@ -830,11 +867,11 @@
             <i data-lucide="plus-circle"></i>
             <span>Oferă</span>
         </a>
-        <a href="#my-spots" class="nav-item" id="mySpotsNavLi" style="display: none;">
+        <a href="#my-spots" class="nav-item mySpotsNavLi" style="display: none;">
             <i data-lucide="car"></i>
             <span>Parcări</span>
         </a>
-        <a href="#admin" class="nav-item mobile-admin" id="adminNavLiMobile" style="display: none; color: #fbbf24;">
+        <a href="#admin" class="nav-item mobile-admin adminNavLi" style="display: none; color: #fbbf24;">
             <i data-lucide="shield"></i>
             <span>Admin</span>
         </a>
@@ -1016,13 +1053,22 @@
                         <!-- PAS 2: DOCUMENTE -->
                         <div class="wizard-step" id="wizard-step-2" style="display: none; padding: 1.5rem;">
                             <div class="form-group" style="margin-bottom: 1.5rem;">
-                                <label for="contractPdf">Încarcă Contractul de Închiriere (PDF)</label>
-                                <div style="position: relative; border: 2px dashed var(--glass-border); border-radius: 12px; padding: 3rem 2rem; text-align: center; cursor: pointer; transition: all 0.2s; background: rgba(255,255,255,0.02);" id="pdfDropzone">
-                                    <i data-lucide="file-text" style="width: 40px; height: 40px; color: var(--primary); margin-bottom: 1rem;"></i>
-                                    <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Trage contractul PDF aici sau <span style="color: var(--primary); font-weight: 700;">apasă pentru a selecta</span></p>
-                                    <p id="pdfFileName" style="color: #22c55e; font-size: 0.9rem; margin-top: 1rem; font-weight: 600; display: none;"></p>
-                                    <input type="file" id="contractPdf" accept=".pdf" onchange="handlePdfSelect(this)" style="position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; z-index: 10;">
+                                <label>Încarcă Contractul de Închiriere</label>
+                                
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem; margin-bottom: 1rem;" id="pdfDropzone">
+                                    <div style="position: relative; border: 2px dashed var(--primary); border-radius: 12px; padding: 1.5rem 1rem; text-align: center; cursor: pointer; background: rgba(59,130,246,0.1); transition: all 0.2s;">
+                                        <i data-lucide="camera" style="width: 32px; height: 32px; color: var(--primary); margin-bottom: 0.5rem;"></i>
+                                        <p style="color: white; font-size: 0.9rem; font-weight: 600; margin: 0;">Fă o poză</p>
+                                        <input type="file" id="contractPhoto" accept="image/*" capture="environment" onchange="handlePdfSelect(this, 'photo')" style="position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; z-index: 10;">
+                                    </div>
+                                    
+                                    <div style="position: relative; border: 2px dashed var(--glass-border); border-radius: 12px; padding: 1.5rem 1rem; text-align: center; cursor: pointer; background: rgba(255,255,255,0.02); transition: all 0.2s;">
+                                        <i data-lucide="file-text" style="width: 32px; height: 32px; color: var(--text-muted); margin-bottom: 0.5rem;"></i>
+                                        <p style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600; margin: 0;">Alege fișier</p>
+                                        <input type="file" id="contractPdf" accept=".pdf, image/*" onchange="handlePdfSelect(this, 'file')" style="position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; z-index: 10;">
+                                    </div>
                                 </div>
+                                <p id="pdfFileName" style="color: #22c55e; font-size: 0.9rem; margin-top: 0.5rem; font-weight: 600; display: none; text-align: center;"></p>
                             </div>
                             
                             <div class="form-group" style="margin-bottom: 2rem;">
@@ -1120,13 +1166,19 @@
                     <label>Username</label>
                     <input type="text" id="regUsername" required placeholder="ion_popescu">
                 </div>
-                <div class="form-group" style="margin-bottom: 1rem;">
-                    <label>Email / Telefon</label>
-                    <input type="text" id="regContact" required placeholder="contact@exemplu.ro">
+                <div class="form-row register-name-row">
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label>Email</label>
+                        <input type="email" id="regEmail" required placeholder="contact@exemplu.ro">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label>Telefon</label>
+                        <input type="tel" id="regPhone" required placeholder="07xxxxxxxx" pattern="^07[0-9]{8}$" title="Numărul trebuie să înceapă cu 07 și să aibă 10 cifre.">
+                    </div>
                 </div>
                 <div class="form-group" style="margin-bottom: 1.5rem;">
                     <label>Parolă</label>
-                    <input type="password" id="regPassword" required placeholder="••••••••">
+                    <input type="password" id="regPassword" required placeholder="••••••••" pattern="^(?=.*\d).{8,}$" title="Minim 8 caractere, obligatoriu cel puțin o cifră.">
                 </div>
 
                 <div class="form-group terms-group" style="margin-bottom: 2rem;">
@@ -1162,7 +1214,7 @@
                 </div>
                 <button type="submit" class="btn btn-primary btn-block">Conectare</button>
                 <p style="text-align:center; margin-top:1rem; font-size:0.85rem; color:var(--text-muted);">Nu ai cont?
-                    <a href="#" data-open-modal="registerModal"
+                    <a href="#" data-open-modal="registerModal" onclick="document.getElementById('loginModal').classList.remove('active')"
                         style="color:var(--primary);font-weight:600;">&#206;nregistrează-te</a></p>
             </form>
         </div>
@@ -1202,6 +1254,73 @@
                 <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1.5rem;">Salvează
                     Modificările</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Wallet Modal (Circuit Financiar Inchis) -->
+    <div id="walletModal" class="modal-overlay">
+        <div class="modal-card glass-card" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3>Portofelul Meu</h3>
+                <button class="btn-icon" onclick="document.getElementById('walletModal').classList.remove('active')"><i data-lucide="x"></i></button>
+            </div>
+            <div style="padding: 1.5rem; text-align: center;">
+                <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0 0 0.5rem 0;">Sold Curent</p>
+                    <h2 id="walletBalanceDisplay" style="color: #f59e0b; font-size: 2.5rem; margin: 0; font-weight: 800;">45 RON</h2>
+                </div>
+                
+                <div style="text-align: left; background: rgba(59, 130, 246, 0.05); padding: 1rem; border-radius: 8px; border-left: 3px solid var(--primary); margin-bottom: 1.5rem;">
+                    <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">
+                        <i data-lucide="info" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px;"></i>
+                        Conform acordului de plată (Circuit Financiar Închis), fondurile obținute din închirierea locului de parcare <b>nu pot fi retrase în cont bancar</b>. Ele sunt destinate exclusiv achitării taxelor locale către DGITL Sector 4.
+                    </p>
+                </div>
+
+                <button class="btn btn-primary btn-block" onclick="payTaxesS4()" id="btnPayTaxes" style="padding: 1rem; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
+                    <i data-lucide="landmark"></i> Plătește Impozit / Taxă S4
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Incident / Abuse Report Modal -->
+    <div id="incidentModal" class="modal-overlay">
+        <div class="modal-card glass-card" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3 style="color: #ef4444;">Raportează Ocupare Abuzivă</h3>
+                <button class="btn-icon" onclick="document.getElementById('incidentModal').classList.remove('active')"><i data-lucide="x"></i></button>
+            </div>
+            <div style="padding: 1.5rem;">
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+                    Pentru a alerta Poliția Locală S4 și a-ți primi banii înapoi automat, te rugăm să atașezi o dovadă foto cu mașina care ocupă locul rezervat.
+                </p>
+                
+                <input type="file" id="incidentPhoto" accept="image/*" capture="environment" style="display: none;" onchange="handleIncidentPhoto(this)">
+                <div id="incidentDropzone" onclick="document.getElementById('incidentPhoto').click()" style="border: 2px dashed rgba(255,255,255,0.2); border-radius: 12px; padding: 2rem; text-align: center; margin-bottom: 1.5rem; cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.2)'">
+                    <div id="incidentDropzoneContent">
+                        <i data-lucide="camera" style="width: 32px; height: 32px; color: var(--text-muted); margin-bottom: 0.5rem;"></i>
+                        <p style="margin: 0; font-weight: 600; color: white;">Apasă pentru a deschide camera</p>
+                        <p style="margin: 0; font-size: 0.75rem; color: var(--text-muted);">sau alege o poză din galerie</p>
+                    </div>
+                    <div id="incidentPhotoPreview" style="display: none;">
+                        <img id="incidentPhotoImg" src="" alt="Dovada foto" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+                        <p style="margin: 0.5rem 0 0 0; font-size: 0.8rem; color: #10b981; font-weight: 600;"><i data-lucide="check-circle" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px;"></i> Dovadă foto atașată</p>
+                    </div>
+                </div>
+                
+                <div style="background: rgba(239, 68, 68, 0.05); padding: 0.75rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid rgba(239, 68, 68, 0.2);">
+                    <p style="margin: 0; font-size: 0.8rem; color: #ef4444; display: flex; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="map-pin" style="width: 14px; height: 14px;"></i> Coordonatele GPS (Data & Ora) vor fi atașate automat alertei oficiale.
+                    </p>
+                </div>
+
+                <input type="hidden" id="incidentSpotId" value="">
+                
+                <button class="btn btn-primary btn-block" style="background: #ef4444; border-color: #ef4444; padding: 1rem; font-weight: 700;" onclick="submitIncidentReport()" id="btnSubmitIncident">
+                    Trimite Alertă la Poliția Locală
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1323,6 +1442,40 @@
         </div>
     </div>
 
+    <!-- List Spot Modal (Listează Acum) -->
+    <div id="listSpotModal" class="modal-overlay">
+        <div class="modal-card glass-card" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>Listează Acum</h3>
+                <button class="btn-icon"
+                    onclick="document.getElementById('listSpotModal').classList.remove('active')"><i
+                        data-lucide="x"></i></button>
+            </div>
+            <div style="padding: 1.5rem;">
+                <p id="listSpotInfo" style="margin-bottom: 1.5rem; color: var(--text-muted);"></p>
+                
+                <div class="form-group">
+                    <label>Data</label>
+                    <input type="date" id="listSpotDate">
+                </div>
+                
+                <div class="form-row" style="margin-top: 1rem;">
+                    <div class="form-group">
+                        <label>Ora Start</label>
+                        <input type="time" id="listSpotStart" value="08:00">
+                    </div>
+                    <div class="form-group">
+                        <label>Ora Sfârșit</label>
+                        <input type="time" id="listSpotEnd" value="18:00">
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary btn-block" onclick="confirmListSpot()"
+                    style="margin-top: 2rem; padding: 1rem;">Activează Listarea</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Terms and Conditions Modal -->
     <div id="termsModal" class="modal-overlay">
         <div class="modal-card glass-card" style="max-width: 650px;">
@@ -1379,12 +1532,44 @@
         </div>
     </section>
 
+    <!-- Chat Modal -->
+    <div id="chatModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 400px; padding: 0; display: flex; flex-direction: column; height: 80vh; max-height: 600px; background: rgba(15, 23, 42, 0.95);">
+            <div style="padding: 1rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2);">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); display: flex; justify-content: center; align-items: center;">
+                        <i data-lucide="user" style="color: white; width: 20px; height: 20px;"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.1rem; color: white;" id="chatOwnerName">Proprietar</h3>
+                        <span style="font-size: 0.75rem; color: #4ade80;">Online acum</span>
+                    </div>
+                </div>
+                <button class="btn-icon" onclick="closeChat()">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            
+            <div id="chatMessages" style="flex: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+                <!-- Mesajele vor apărea aici -->
+            </div>
+            
+            <div style="padding: 1rem; border-top: 1px solid rgba(255,255,255,0.05); display: flex; gap: 0.5rem; background: rgba(0,0,0,0.2);">
+                <input type="text" id="chatInput" placeholder="Scrie un mesaj..." style="flex: 1; padding: 0.75rem 1rem; border-radius: 20px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;" onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                <button class="btn btn-primary" onclick="sendChatMessage()" style="border-radius: 50%; width: 45px; height: 45px; padding: 0; display: flex; justify-content: center; align-items: center;">
+                    <i data-lucide="send" style="width: 18px; height: 18px; margin-left: -2px;"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <footer class="footer">
         <div class="container">
             <p>&copy; 2026 ParkShare. Toate drepturile rezervate.</p>
         </div>
     </footer>
     <!-- Our scripts -->
+    <script src="s4_points_nominatim.js"></script>
     <script src="app.js?v=12" defer></script>
     <script>
         // Fail-safe icon rendering

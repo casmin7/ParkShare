@@ -804,6 +804,7 @@ section {
     border: 1px solid var(--glass-border);
     border-radius: 8px;
     color: white;
+    color-scheme: dark;
 }
 
 .form-row {
@@ -2531,8 +2532,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         top: 0;
         left: 0;
         width: 100%;
-        height: 60px;
+        height: calc(60px + env(safe-area-inset-top, 0px));
         padding: 0 1rem;
+        padding-top: env(safe-area-inset-top, 0px);
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -2540,8 +2542,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         background: rgba(15, 23, 42, 0.95);
         backdrop-filter: blur(15px);
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        /* Safe area support for iOS notches */
-        padding-top: env(safe-area-inset-top, 0);
     }
     
     .mobile-top-header .nav-extra {
@@ -2590,8 +2590,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         height: 20px;
     }
 
-    .bottom-nav .nav-item.active,
-    .bottom-nav .nav-item:hover {
+    .bottom-nav .nav-item.active {
         color: var(--primary);
     }
     
