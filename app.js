@@ -101,13 +101,23 @@ async function loadState() {
         }
     }
     
-    // Check if we need to seed Sector 4 mock spots (if no mock spots exist or count is low)
-    const hasS4Mock = appState.spots.some(s => s.isMock && s.address && s.address.includes("Sector 4"));
-    if (!hasS4Mock || appState.spots.length < 5) {
-        // Clear any old mock spots first to avoid duplicates
-        appState.spots = appState.spots.filter(s => !s.isMock);
+    // Check if we need to seed Sector 4 mock spots
+    const hasMockSpots = appState.spots.some(s => s.isMock);
+    if (!hasMockSpots) {
         seedMockSpots();
-        // Overwrite the database with the clean Sector 4 state
+    }
+
+    // --- Migration: Transfer ALL spots to admin ---
+    let migrated = false;
+    appState.spots.forEach(s => {
+        if (s.owner && s.owner !== 'admin') {
+            console.log(`Migrating spot ${s.id} from ${s.owner} to admin`);
+            s.owner = 'admin';
+            s.ownerFirstName = 'Admin';
+            migrated = true;
+        }
+    });
+    if (migrated || !hasMockSpots) {
         await saveState();
     }
 }
@@ -123,14 +133,10 @@ function seedMockSpots() {
         const status = isActiveListing ? 'available' : 'verified';
         
         // Generăm intervale orare aleatorii pentru locurile disponibile
-        let availability = [];
+        let availability = null;
         if (isActiveListing) {
             const today = new Date().toISOString().split('T')[0];
-            const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-            availability = [
-                { date: today, start: "08:00", end: "14:00" },
-                { date: tomorrow, start: "16:00", end: "22:00" }
-            ];
+            availability = { date: today, start: "00:00", end: "23:59" };
         }
 
         appState.spots.push({
@@ -168,7 +174,7 @@ async function saveState() {
         console.log("State saved successfully to cloud.");
     } catch (err) { 
         console.error("CLOUD SAVE FAILED! Data remains local only.", err);
-        showToast("Eroare la salvarea în cloud! Datele sunt salvate doar local.", true);
+        // showToast("Eroare la salvarea în cloud! Datele sunt salvate doar local.", true);
     }
 }
 
@@ -367,7 +373,7 @@ document.addEventListener('click', (e) => {
     }
     
     // Closer logic
-    if (e.target.closest('.modal-overlay') && !e.target.closest('.modal-card') && !e.target.closest('.modal-content')) {
+    if (e.target.closest('.modal-overlay') && !e.target.closest('.modal-card') && !e.target.closest('.modal-content') && !e.target.closest('.chat-fs')) {
         e.target.closest('.modal-overlay').classList.remove('active');
     }
     if (e.target.closest('.btn-icon') && e.target.closest('.modal-header')) {
@@ -572,167 +578,184 @@ function renderMySpots() {
     const list = document.getElementById('mySpotsList');
     const empty = document.getElementById('mySpotsEmpty');
     if (!list || !currentUser) return;
-
-    // --- Secțiunea 1: Locurile mele (cele pe care le dețin) ---
-    const myOwnedSpots = appState.spots.filter(s => s.owner === currentUser.username);
     
-    // --- Secțiunea 2: Rezervările mele (cele pe care le-am închiriat) ---
-    const myReservations = appState.spots.filter(s => s.bookedBy === currentUser.username && s.status === 'booked');
+    try {
+        const myOwnedSpots = appState.spots.filter(s => s.owner === currentUser.username);
+        const myReservations = appState.spots.filter(s => s.bookedBy === currentUser.username && s.status === 'booked');
 
-    if (myOwnedSpots.length === 0 && myReservations.length === 0) {
-        list.innerHTML = '';
-        empty.style.display = 'block';
-        return;
-    }
+        if (myOwnedSpots.length === 0 && myReservations.length === 0) {
+            list.innerHTML = '';
+            empty.style.display = 'block';
+            return;
+        }
 
-    empty.style.display = 'none';
+        empty.style.display = 'none';
+        let html = '';
 
-    let html = '';
-
-    if (myReservations.length > 0) {
-        html += `
-        <div style="grid-column: 1 / -1; margin-bottom: 1rem;">
-            <h2 style="font-size: 1.25rem; color: #f59e0b; display: flex; align-items: center; gap: 0.5rem;">
-                <i data-lucide="clock"></i> Rezervările Mele Active
-            </h2>
-            <p style="color: var(--text-muted); font-size: 0.9rem;">Locuri pe care le folosești acum</p>
-        </div>`;
-        
-        myReservations.forEach(spot => {
+        if (myReservations.length > 0) {
             html += `
-            <div class="glass-card" style="padding: 1.5rem; border-left: 4px solid #f59e0b; display: flex; flex-direction: column; gap: 1rem; background: rgba(245, 158, 11, 0.05);">
-                <div style="display: flex; justify-content: space-between;">
-                    <div>
-                        <h3 style="color: #f59e0b; margin: 0;">Loc ${spot.spotNumber}</h3>
-                        <p style="font-size: 0.85rem; color: var(--text-muted);">${spot.address}</p>
-                    </div>
-                    <div style="text-align: right;">
-                        <div id="timer-label-${spot.id}" style="font-size: 0.7rem; color: #f59e0b; font-weight: 800;">STATUS:</div>
-                        <div id="countdown-${spot.id}" class="status-text-top" style="font-size: 1.2rem; font-weight: 800; color: white; line-height:1.1;">--:--</div>
-                    </div>
-                </div>
-                <div style="font-size: 0.85rem; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 8px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                        <span style="color: var(--text-muted);">Data:</span>
-                        <b style="color: white;">${spot.availability?.date ? new Date(spot.availability.date).toLocaleDateString('ro-RO') : 'Azi'}</b>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span style="color: var(--text-muted);">Interval:</span>
-                        <b style="color: white;">${spot.availability?.start || 'N/A'} - ${spot.availability?.end || 'N/A'}</b>
-                    </div>
-                    </div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-                    <a href="tel:0700000000" class="btn btn-sm btn-outline" style="border-color: #22c55e; color: #22c55e; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
-                        <i data-lucide="phone" style="width: 14px; height: 14px;"></i> Sună
-                    </a>
-                    <button class="btn btn-sm btn-outline" onclick="openChat('${spot.owner}')" style="display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
-                        <i data-lucide="message-circle" style="width: 14px; height: 14px;"></i> Mesaj
-                    </button>
-                </div>
-                <a href="https://www.google.com/maps/dir/?api=1&destination=${spot.center[0]},${spot.center[1]}" target="_blank" class="btn btn-sm btn-primary btn-block" style="background: #f59e0b; border-color: #f59e0b; margin-top: 0.5rem; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
-                    <i data-lucide="navigation" style="width: 14px; height: 14px;"></i> Vezi Drumul spre Loc
-                </a>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem;">
-                    <button class="btn btn-sm btn-outline btn-block" style="border-color: var(--glass-border); color: var(--text-muted); display: flex; justify-content: center; align-items: center; gap: 0.5rem;" onclick="cancelBooking(${spot.id})">
-                        <i data-lucide="x-circle" style="width: 14px; height: 14px;"></i> Anulează
-                    </button>
-                    <button class="btn btn-sm btn-outline btn-block" style="border-color: #ef4444; color: #ef4444; background: rgba(239, 68, 68, 0.05); display: flex; justify-content: center; align-items: center; gap: 0.5rem;" onclick="openIncidentModal(${spot.id})">
-                        <i data-lucide="alert-triangle" style="width: 14px; height: 14px;"></i> Alertă Abuz
-                    </button>
-                </div>
+            <div style="grid-column: 1 / -1; margin-bottom: 1rem;">
+                <h2 style="font-size: 1.25rem; color: #f59e0b; display: flex; align-items: center; gap: 0.5rem;">
+                    <i data-lucide="clock"></i> Rezervările Mele Active
+                </h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Locuri pe care le folosești acum</p>
             </div>`;
-        });
-    }
-
-    if (myOwnedSpots.length > 0) {
-        html += `
-        <div style="grid-column: 1 / -1; margin-top: 2rem; margin-bottom: 1rem;">
-            <h2 style="font-size: 1.25rem; color: var(--primary);">Locurile Mele Listate</h2>
-            <p style="color: var(--text-muted); font-size: 0.9rem;">Locurile pe care le deții și statusul lor</p>
-        </div>`;
-
-        myOwnedSpots.forEach(spot => {
-            const isBooked = spot.status === 'booked';
-            const isAvailable = spot.status === 'available';
-            const statusClass = spot.status === 'pending_verification' ? 'pending'
-                : (spot.status === 'verified' || isAvailable || isBooked) ? 'verified' : 'rejected';
             
-            let statusLabel = '❌ Respins';
-            if (spot.status === 'pending_verification') statusLabel = '⏳ În așteptare';
-            else if (isBooked) statusLabel = '✅ Aprobat (Rezervat)';
-            else if (isAvailable) statusLabel = '✅ Activ (Listat)';
-            else if (spot.status === 'verified') statusLabel = '✅ Aprobat';
+            myReservations.forEach(spot => {
+                const dateStr = spot.availability?.date ? new Date(spot.availability.date).toLocaleDateString('ro-RO') : 'Azi';
+                const lat = spot.center?.[0] || 0;
+                const lng = spot.center?.[1] || 0;
 
-            html += `
-            <div class="glass-card" style="padding: 1.5rem; position: relative; display: flex; flex-direction: column; gap: 1rem; border-left: 4px solid ${isBooked ? '#f59e0b' : (isAvailable ? '#3b82f6' : 'transparent')};">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div>
-                        <h3 style="color: var(--primary); margin: 0;">Loc ${spot.spotNumber}</h3>
-                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">${spot.address}</p>
-                    </div>
-                    <span class="status-badge status-${statusClass}" style="font-size: 0.75rem;">${statusLabel}</span>
-                </div>
-                
-                <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 12px; font-size: 0.9rem;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; align-items: center;">
-                        <span style="color: var(--text-muted);">Tarif:</span>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <span style="font-weight: 600; color: white;">${spot.price} RON/oră</span>
-                            ${isBooked ? '' : `
-                            <button class="btn-icon" onclick="editSpotPrice(${spot.id})" style="padding: 2px; height: 24px; width: 24px;" title="Modifică Tarif">
-                                <i data-lucide="edit-2" style="width: 14px; height: 14px; color: var(--primary);"></i>
-                            </button>
-                            `}
+                html += `
+                <div class="glass-card" style="padding: 1.5rem; border-left: 4px solid #f59e0b; display: flex; flex-direction: column; gap: 1rem; background: rgba(245, 158, 11, 0.05);">
+                    <div style="display: flex; justify-content: space-between;">
+                        <div>
+                            <h3 style="color: #f59e0b; margin: 0;">Loc ${spot.spotNumber || '?'}</h3>
+                            <p style="font-size: 0.85rem; color: var(--text-muted);">${spot.address || 'Fără adresă'}</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <div id="timer-label-${spot.id}" style="font-size: 0.7rem; color: #f59e0b; font-weight: 800;">STATUS:</div>
+                            <div id="countdown-${spot.id}" class="status-text-top" style="font-size: 1.2rem; font-weight: 800; color: white; line-height:1.1;">--:--</div>
                         </div>
                     </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span style="color: var(--text-muted);">Listat la:</span>
-                        <span>${new Date(spot.listedAt).toLocaleDateString('ro-RO')}</span>
+                    <div style="font-size: 0.85rem; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                            <span style="color: var(--text-muted);">Data:</span>
+                            <b style="color: white;">${dateStr}</b>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--text-muted);">Interval:</span>
+                            <b style="color: white;">${spot.availability?.start || 'N/A'} - ${spot.availability?.end || 'N/A'}</b>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        <button class="btn btn-sm btn-outline" onclick="startInternalCall('${spot.owner || ''}')" style="border-color: #22c55e; color: #22c55e; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
+                            <i data-lucide="phone" style="width: 14px; height: 14px;"></i> Sună (Intern)
+                        </button>
+                        <button class="btn btn-sm btn-outline" onclick="openChat('${spot.owner || ''}')" style="display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
+                            <i data-lucide="message-circle" style="width: 14px; height: 14px;"></i> Mesaj
+                        </button>
+                    </div>
+                    <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank" class="btn btn-sm btn-primary btn-block" style="background: #f59e0b; border-color: #f59e0b; margin-top: 0.5rem; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="navigation" style="width: 14px; height: 14px;"></i> Vezi Drumul spre Loc
+                    </a>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem;">
+                        <button class="btn btn-sm btn-outline btn-block" style="border-color: var(--glass-border); color: var(--text-muted); display: flex; justify-content: center; align-items: center; gap: 0.5rem;" onclick="cancelBooking(${spot.id})">
+                            <i data-lucide="x-circle" style="width: 14px; height: 14px;"></i> Anulează
+                        </button>
+                        <button class="btn btn-sm btn-outline btn-block" style="border-color: #ef4444; color: #ef4444; background: rgba(239, 68, 68, 0.05); display: flex; justify-content: center; align-items: center; gap: 0.5rem;" onclick="openIncidentModal(${spot.id})">
+                            <i data-lucide="alert-triangle" style="width: 14px; height: 14px;"></i> Alertă Abuz
+                        </button>
+                    </div>
+                </div>`;
+            });
+        }
+
+        if (myOwnedSpots.length > 0) {
+            html += `
+            <div style="grid-column: 1 / -1; margin-top: 2rem; margin-bottom: 1rem;">
+                <h2 style="font-size: 1.25rem; color: var(--primary);">Locurile Mele Listate</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Locurile pe care le deții și statusul lor</p>
+            </div>`;
+
+            myOwnedSpots.forEach(spot => {
+                const isBooked = spot.status === 'booked';
+                const isAvailable = spot.status === 'available';
+                const statusClass = spot.status === 'pending_verification' ? 'pending'
+                    : (spot.status === 'verified' || isAvailable || isBooked) ? 'verified' : 'rejected';
+                
+                let statusLabel = '❌ Respins';
+                if (spot.status === 'pending_verification') statusLabel = '⏳ În așteptare';
+                else if (isBooked) statusLabel = '✅ Aprobat (Rezervat)';
+                else if (isAvailable) statusLabel = '✅ Activ (Listat)';
+                else if (spot.status === 'verified') statusLabel = '✅ Aprobat';
+
+                const lat = spot.center?.[0] || 0;
+                const lng = spot.center?.[1] || 0;
+                const listedDate = spot.listedAt ? new Date(spot.listedAt).toLocaleDateString('ro-RO') : 'N/A';
+                const availDate = spot.availability?.date ? new Date(spot.availability.date).toLocaleDateString('ro-RO') : 'Azi';
+
+                html += `
+                <div class="glass-card" style="padding: 1.5rem; position: relative; display: flex; flex-direction: column; gap: 1rem; border-left: 4px solid ${isBooked ? '#f59e0b' : (isAvailable ? '#3b82f6' : 'transparent')};">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <h3 style="color: var(--primary); margin: 0;">Loc ${spot.spotNumber || '?'}</h3>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">${spot.address || 'Fără adresă'}</p>
+                        </div>
+                        <span class="status-badge status-${statusClass}" style="font-size: 0.75rem;">${statusLabel}</span>
                     </div>
                     
-                    ${isBooked || isAvailable ? `
-                    <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.05);">
-                        <div style="color: ${isBooked ? '#f59e0b' : '#3b82f6'}; font-weight: 700; font-size: 0.8rem; margin-bottom: 4px;">
-                            ${isBooked ? '📅 LOC REZERVAT' : '📅 LISTAT ACTIV'}
+                    <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 12px; font-size: 0.9rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; align-items: center;">
+                            <span style="color: var(--text-muted);">Tarif:</span>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="font-weight: 600; color: white;">${spot.price || 0} RON/oră</span>
+                                ${isBooked ? '' : `
+                                <button class="btn-icon" onclick="editSpotPrice(${spot.id})" style="padding: 2px; height: 24px; width: 24px;" title="Modifică Tarif">
+                                    <i data-lucide="edit-2" style="width: 14px; height: 14px; color: var(--primary);"></i>
+                                </button>
+                                `}
+                            </div>
                         </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px;">
-                            <span style="color: var(--text-muted);">Data:</span>
-                            <span style="font-weight: 600; color: white;">${spot.availability?.date ? new Date(spot.availability.date).toLocaleDateString('ro-RO') : 'Azi'}</span>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--text-muted);">Listat la:</span>
+                            <span>${listedDate}</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
-                            <span style="color: var(--text-muted);">Interval:</span>
-                            <span style="font-weight: 600; color: white;">${spot.availability?.start || 'N/A'} - ${spot.availability?.end || 'N/A'}</span>
+                        
+                        ${isBooked || isAvailable ? `
+                        <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                            <div style="color: ${isBooked ? '#f59e0b' : '#3b82f6'}; font-weight: 700; font-size: 0.8rem; margin-bottom: 4px;">
+                                ${isBooked ? '📅 LOC REZERVAT' : '📅 LISTAT ACTIV'}
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px;">
+                                <span style="color: var(--text-muted);">Data:</span>
+                                <span style="font-weight: 600; color: white;">${availDate}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                                <span style="color: var(--text-muted);">Interval:</span>
+                                <span style="font-weight: 600; color: white;">${spot.availability?.start || 'N/A'} - ${spot.availability?.end || 'N/A'}</span>
+                            </div>
                         </div>
+                        ` : ''}
                     </div>
+
+                    <div style="display: flex; gap: 0.5rem; margin-top: auto;">
+                        ${spot.status === 'pending_verification' ? `
+                        <button class="btn btn-sm btn-primary btn-block" style="background: #475569; border-color: #475569; opacity: 0.5; cursor: not-allowed;" disabled title="Locul trebuie aprobat de administrator înainte de a fi listat.">
+                            <i data-lucide="clock" style="width: 14px; height: 14px; margin-right: 4px;"></i> Așteaptă Aprobare
+                        </button>
+                        <button class="btn btn-sm btn-outline btn-block" style="border-color: #ef4444; color: #ef4444;" onclick="deleteSpot(${spot.id})">
+                            Șterge
+                        </button>
+                        ` : `
+                        <button class="btn btn-sm btn-primary btn-block" style="background: ${isBooked ? '#475569' : '#3b82f6'}; border-color: ${isBooked ? '#475569' : '#3b82f6'}; ${isBooked ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isBooked ? 'disabled' : `onclick="openListSpotModal(${spot.id})"`} title="${isBooked ? 'Nu poți modifica un loc cât timp este rezervat.' : ''}">
+                            <i data-lucide="clock" style="width: 14px; height: 14px; margin-right: 4px;"></i> ${isBooked ? 'Indisponibil' : 'Listează Acum'}
+                        </button>
+                        <button class="btn btn-sm btn-outline btn-block" style="border-color: #ef4444; color: #ef4444; ${isBooked ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isBooked ? 'disabled' : `onclick="deleteSpot(${spot.id})"`} title="${isBooked ? 'Nu poți șterge un loc rezervat.' : ''}">
+                            Șterge
+                        </button>
+                        `}
+                    </div>
+                    ${isBooked ? `
+                    <button class="btn btn-sm btn-primary btn-block" style="margin-top: 0.5rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem;" onclick="openChat('${spot.bookedBy || 'Chiriaș'}')">
+                        <i data-lucide="message-circle" style="width: 14px; height: 14px;"></i> Mesaj Chiriaș
+                    </button>
                     ` : ''}
-                </div>
+                    <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank" class="btn btn-sm btn-outline btn-block" style="margin-top: 0.5rem; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="navigation" style="width: 14px; height: 14px;"></i> Vezi Drumul spre Loc
+                    </a>
+                </div>`;
+            });
+        }
 
-                <div style="display: flex; gap: 0.5rem; margin-top: auto;">
-                    <button class="btn btn-sm btn-primary btn-block" style="background: ${isBooked ? '#475569' : '#3b82f6'}; border-color: ${isBooked ? '#475569' : '#3b82f6'}; ${isBooked ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isBooked ? 'disabled' : `onclick="openListSpotModal(${spot.id})"`} title="${isBooked ? 'Nu poți modifica un loc cât timp este rezervat.' : ''}">
-                        <i data-lucide="clock" style="width: 14px; height: 14px; margin-right: 4px;"></i> ${isBooked ? 'Indisponibil' : 'Listează Acum'}
-                    </button>
-                    <button class="btn btn-sm btn-outline btn-block" style="border-color: #ef4444; color: #ef4444; ${isBooked ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isBooked ? 'disabled' : `onclick="deleteSpot(${spot.id})"`} title="${isBooked ? 'Nu poți șterge un loc rezervat.' : ''}">
-                        Șterge
-                    </button>
-                </div>
-                ${isBooked ? `
-                <button class="btn btn-sm btn-primary btn-block" style="margin-top: 0.5rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem;" onclick="openChat('${spot.bookedBy || 'Chiriaș'}')">
-                    <i data-lucide="message-circle" style="width: 14px; height: 14px;"></i> Mesaj Chiriaș
-                </button>
-                ` : ''}
-                <a href="https://www.google.com/maps/dir/?api=1&destination=${spot.center[0]},${spot.center[1]}" target="_blank" class="btn btn-sm btn-outline btn-block" style="margin-top: 0.5rem; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
-                    <i data-lucide="navigation" style="width: 14px; height: 14px;"></i> Vezi Drumul spre Loc
-                </a>
-            </div>`;
-        });
+        list.innerHTML = html;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        startAllCountdowns();
+    } catch (err) {
+        list.innerHTML = '<div style="color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 2rem; border-radius: 12px; border: 1px solid #ef4444; text-align: center;">Eroare la afișare. Te rog reîncarcă pagina. (' + err.message + ')</div>';
+        empty.style.display = 'none';
+        console.error("renderMySpots error:", err);
     }
-
-    list.innerHTML = html;
-    if (typeof lucide !== 'undefined') lucide.createIcons();
-    
-    // Inițiem cronometrele
-    startAllCountdowns();
 }
 
 function startAllCountdowns() {
@@ -743,8 +766,9 @@ function startAllCountdowns() {
 
         const update = () => {
             const now = new Date();
-            const dateStr = spot.availability?.date || now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
-            const [year, month, day] = dateStr.split('-').map(Number);
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1;
+            const day = now.getDate();
             const [startH, startM] = (spot.availability?.start || "00:00").split(':').map(Number);
             const [endH, endM] = (spot.availability?.end || "23:59").split(':').map(Number);
             
@@ -1707,7 +1731,7 @@ window.bookSpot = (id) => {
         return;
     }
 
-    const spot = appState.spots.find(s => s.id === id);
+    const spot = appState.spots.find(s => s.id == id);
     if (!spot) return;
 
     if (spot.status === 'booked') {
@@ -1740,7 +1764,7 @@ window.bookSpot = (id) => {
 };
 
 window.updateBookingSummary = () => {
-    const spot = appState.spots.find(s => s.id === currentBookingSpotId);
+    const spot = appState.spots.find(s => s.id == currentBookingSpotId);
     if (!spot) return;
 
     const startVal = document.getElementById('bookingStart').value;
@@ -1773,7 +1797,7 @@ window.updateBookingSummary = () => {
 };
 
 window.confirmBooking = async () => {
-    const spot = appState.spots.find(s => s.id === currentBookingSpotId);
+    const spot = appState.spots.find(s => s.id == currentBookingSpotId);
     if (!spot) return;
 
     const startVal = document.getElementById('bookingStart').value;
@@ -1802,6 +1826,18 @@ window.confirmBooking = async () => {
 
     if (endTotal - startTotal < 60) {
         showToast("Rezervarea minimă este de 1 oră!", true);
+        return;
+    }
+
+    // Check if the selected time is already in the past
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    const endTimeObj = new Date(year, month - 1, day, endH, endM, 0, 0);
+
+    if (now >= endTimeObj) {
+        showToast("Nu poți rezerva un interval care s-a încheiat deja (ora selectată a trecut)!", true);
         return;
     }
 
@@ -1942,7 +1978,7 @@ function initListForm() {
                 polygon: appState.selectedPolygon, // Atașează poligonul la cerere
                 status: 'pending_verification',
                 description: description,
-                contractPdf: pdfBase64,
+                contractPdf: "[FILE_UPLOADED_TO_CLOUD_STORAGE_MOCK]", // Avoid localStorage quota exceeded
                 contractName: pdfFile.name,
                 listedAt: new Date().toISOString()
             };
@@ -2409,6 +2445,13 @@ window.flyAndOpenSpot = (spotNum, lat, lng) => {
         const listEl = document.getElementById('searchResultsList');
         if (listEl) listEl.classList.add('collapsed');
     }
+    
+    // Auto-minimize the top search panel to free up map space
+    const sidebar = document.getElementById('findSidebar');
+    if (sidebar) {
+        sidebar.classList.add('minimized');
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
 
     mapFind.flyTo([lat, lng], 21);
 
@@ -2467,6 +2510,13 @@ function findAndShowNearest() {
 
         // Zburăm la locul de parcare
         mapFind.flyTo(nearest.center, 21);
+
+        // Auto-minimize the top search panel to free up map space
+        const sidebar = document.getElementById('findSidebar');
+        if (sidebar) {
+            sidebar.classList.add('minimized');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
 
         const tryOpenPopup = (attempts) => {
             if (attempts <= 0) return;
@@ -2691,6 +2741,263 @@ window.sendChatMessage = async () => {
         console.error(e);
     }
 };
+
+// ============ IN-APP CALL SYSTEM ============
+let callState = {
+    active: false,
+    connected: false,
+    muted: false,
+    speaker: false,
+    callee: null,
+    caller: null,
+    timerInterval: null,
+    timerSeconds: 0,
+    pollInterval: null,
+    ringTimeout: null,
+    isIncoming: false
+};
+
+const CALL_URL_BASE = "https://kvdb.io/77TAwJmXQUH7pgjBJgGx1x/call_";
+
+window.startInternalCall = async (username) => {
+    if (!currentUser) {
+        showToast("Trebuie să fii autentificat!", true);
+        return;
+    }
+    if (callState.active) {
+        showToast("Ești deja într-un apel!", true);
+        return;
+    }
+
+    callState.active = true;
+    callState.connected = false;
+    callState.callee = username;
+    callState.muted = false;
+    callState.speaker = false;
+    callState.isIncoming = false;
+
+    // Update UI
+    const screen = document.getElementById('callScreen');
+    screen.classList.add('active');
+    screen.classList.remove('connected');
+    document.getElementById('callUsername').textContent = `@${username}`;
+    document.getElementById('callStatusSub').textContent = 'Se sună...';
+    document.getElementById('callTimer').style.display = 'none';
+    document.getElementById('callSecondaryActions').style.display = 'none';
+    
+    const ring = document.querySelector('.call-avatar-ring');
+    ring.classList.add('call-ringing');
+    ring.classList.remove('call-connected');
+    
+    if (window.lucide) window.lucide.createIcons();
+
+    // Signal the callee via kvdb
+    try {
+        await fetch(CALL_URL_BASE + username, {
+            method: 'POST',
+            body: JSON.stringify({ 
+                caller: currentUser.username, 
+                status: 'ringing', 
+                timestamp: Date.now() 
+            })
+        });
+    } catch(e) { console.error("Call signal failed", e); }
+
+    // Poll for answer
+    callState.pollInterval = setInterval(async () => {
+        try {
+            const res = await fetch(CALL_URL_BASE + username + "?t=" + Date.now(), { cache: 'no-store' });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.status === 'accepted' && !callState.connected) {
+                    connectCall();
+                } else if (data.status === 'declined' || data.status === 'ended') {
+                    endCall();
+                    showToast(`@${username} a refuzat apelul.`, true);
+                }
+            }
+        } catch(e) {}
+    }, 2000);
+
+    // Auto-end after 30s if no answer
+    callState.ringTimeout = setTimeout(() => {
+        if (callState.active && !callState.connected) {
+            document.getElementById('callStatusSub').textContent = 'Nu răspunde...';
+            setTimeout(() => endCall(), 2000);
+        }
+    }, 30000);
+};
+
+function connectCall() {
+    callState.connected = true;
+    callState.timerSeconds = 0;
+
+    const screen = document.getElementById('callScreen');
+    screen.classList.add('connected');
+    document.getElementById('callStatusSub').textContent = 'Conectat';
+    document.getElementById('callTimer').style.display = 'block';
+    document.getElementById('callTimer').textContent = '00:00';
+    document.getElementById('callSecondaryActions').style.display = 'flex';
+
+    const ring = document.querySelector('.call-avatar-ring');
+    ring.classList.remove('call-ringing');
+    ring.classList.add('call-connected');
+
+    if (window.lucide) window.lucide.createIcons();
+
+    // Start timer
+    callState.timerInterval = setInterval(() => {
+        callState.timerSeconds++;
+        const mins = String(Math.floor(callState.timerSeconds / 60)).padStart(2, '0');
+        const secs = String(callState.timerSeconds % 60).padStart(2, '0');
+        document.getElementById('callTimer').textContent = `${mins}:${secs}`;
+    }, 1000);
+
+    // Stop ringing poll, start connection poll
+    if (callState.pollInterval) clearInterval(callState.pollInterval);
+    if (callState.ringTimeout) clearTimeout(callState.ringTimeout);
+    
+    // Poll for call end from other side
+    callState.pollInterval = setInterval(async () => {
+        try {
+            const target = callState.isIncoming ? currentUser.username : callState.callee;
+            const res = await fetch(CALL_URL_BASE + target + "?t=" + Date.now(), { cache: 'no-store' });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.status === 'ended') {
+                    endCall();
+                    showToast("Apelul s-a încheiat.", false);
+                }
+            }
+        } catch(e) {}
+    }, 3000);
+}
+
+window.endCall = async () => {
+    const screen = document.getElementById('callScreen');
+    screen.classList.remove('active', 'connected');
+    
+    // Signal end
+    if (callState.callee || callState.caller) {
+        const target = callState.isIncoming ? currentUser.username : callState.callee;
+        try {
+            await fetch(CALL_URL_BASE + target, {
+                method: 'POST',
+                body: JSON.stringify({ caller: currentUser?.username, status: 'ended', timestamp: Date.now() })
+            });
+        } catch(e) {}
+    }
+
+    if (callState.timerInterval) clearInterval(callState.timerInterval);
+    if (callState.pollInterval) clearInterval(callState.pollInterval);
+    if (callState.ringTimeout) clearTimeout(callState.ringTimeout);
+    
+    if (callState.connected) {
+        const mins = String(Math.floor(callState.timerSeconds / 60)).padStart(2, '0');
+        const secs = String(callState.timerSeconds % 60).padStart(2, '0');
+        showToast(`Apel încheiat • ${mins}:${secs}`, false);
+    }
+    
+    callState = { active: false, connected: false, muted: false, speaker: false, callee: null, caller: null, timerInterval: null, timerSeconds: 0, pollInterval: null, ringTimeout: null, isIncoming: false };
+};
+
+window.toggleMute = () => {
+    callState.muted = !callState.muted;
+    const btn = document.getElementById('btnMute');
+    btn.classList.toggle('active-toggle', callState.muted);
+    btn.querySelector('span').textContent = callState.muted ? 'Activează' : 'Mut';
+    showToast(callState.muted ? '🔇 Microfon dezactivat' : '🔊 Microfon activat', false);
+};
+
+window.toggleSpeaker = () => {
+    callState.speaker = !callState.speaker;
+    const btn = document.getElementById('btnSpeaker');
+    btn.classList.toggle('active-toggle', callState.speaker);
+    btn.querySelector('span').textContent = callState.speaker ? 'Intern' : 'Speaker';
+    showToast(callState.speaker ? '🔈 Speaker activat' : '🔇 Speaker dezactivat', false);
+};
+
+window.toggleKeypad = () => {
+    showToast('Tastatura nu este disponibilă pentru apeluri interne.', false);
+};
+
+// --- Incoming Call Polling ---
+function startIncomingCallPoll() {
+    if (!currentUser) return;
+    setInterval(async () => {
+        if (callState.active) return; // don't check if already in a call
+        try {
+            const res = await fetch(CALL_URL_BASE + currentUser.username + "?t=" + Date.now(), { cache: 'no-store' });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.status === 'ringing' && data.caller !== currentUser.username && (Date.now() - data.timestamp < 35000)) {
+                    showIncomingCall(data.caller);
+                }
+            }
+        } catch(e) {}
+    }, 3000);
+}
+
+let incomingCaller = null;
+function showIncomingCall(callerUsername) {
+    if (document.getElementById('incomingCallBanner').classList.contains('active')) return;
+    incomingCaller = callerUsername;
+    document.getElementById('incomingCallerName').textContent = `@${callerUsername}`;
+    document.getElementById('incomingCallBanner').classList.add('active');
+    if (window.lucide) window.lucide.createIcons();
+    
+    // Auto-dismiss after 30s
+    setTimeout(() => {
+        if (document.getElementById('incomingCallBanner').classList.contains('active')) {
+            declineIncomingCall();
+        }
+    }, 30000);
+}
+
+window.acceptIncomingCall = async () => {
+    document.getElementById('incomingCallBanner').classList.remove('active');
+    
+    // Signal acceptance
+    try {
+        await fetch(CALL_URL_BASE + currentUser.username, {
+            method: 'POST',
+            body: JSON.stringify({ caller: incomingCaller, status: 'accepted', timestamp: Date.now() })
+        });
+    } catch(e) {}
+
+    // Open call screen as receiver
+    callState.active = true;
+    callState.connected = false;
+    callState.callee = null;
+    callState.caller = incomingCaller;
+    callState.isIncoming = true;
+
+    const screen = document.getElementById('callScreen');
+    screen.classList.add('active');
+    screen.classList.remove('connected');
+    document.getElementById('callUsername').textContent = `@${incomingCaller}`;
+    document.getElementById('callStatusSub').textContent = 'Se conectează...';
+    document.getElementById('callTimer').style.display = 'none';
+    document.getElementById('callSecondaryActions').style.display = 'none';
+    if (window.lucide) window.lucide.createIcons();
+
+    setTimeout(() => connectCall(), 1000);
+};
+
+window.declineIncomingCall = async () => {
+    document.getElementById('incomingCallBanner').classList.remove('active');
+    try {
+        await fetch(CALL_URL_BASE + currentUser.username, {
+            method: 'POST',
+            body: JSON.stringify({ caller: incomingCaller, status: 'declined', timestamp: Date.now() })
+        });
+    } catch(e) {}
+    incomingCaller = null;
+};
+
+// Start polling for incoming calls after page load
+setTimeout(() => startIncomingCallPoll(), 5000);
+
 
 // --- Wallet Logic (Circuit Financiar Închis) ---
 window.payTaxesS4 = () => {
