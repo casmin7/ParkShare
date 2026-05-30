@@ -786,11 +786,11 @@
             .mobile-only { display: flex !important; }
             
             .mobile-top-header {
-                position: fixed; top: 0; left: 0; width: 100%; height: 60px; padding: 0 1rem;
+                position: fixed; top: 0; left: 0; width: 100%; height: calc(65px + env(safe-area-inset-top, 0px)); padding: 0 1rem;
                 display: flex; align-items: center; justify-content: space-between;
                 z-index: 1000; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(15px);
                 border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-                padding-top: env(safe-area-inset-top, 0);
+                padding-top: env(safe-area-inset-top, 0px);
                 border-radius: 0 0 20px 20px !important;
             }
             .mobile-top-header .nav-extra { display: flex; align-items: center; gap: 0.5rem; }
@@ -848,7 +848,7 @@
             .hero-title {
                 margin-top: 0 !important;
             }
-            main { padding-bottom: 100px; margin-top: 60px; }
+            main { padding-bottom: 100px; margin-top: calc(65px + env(safe-area-inset-top, 0px)); }
             .footer { display: none !important; }
             
             /* Strictly lock body scroll when on map */
@@ -870,11 +870,10 @@
             /* --- FULL SCREEN MAP FOR FIND SPOT --- */
             #find-spot {
                 position: fixed !important;
-                top: 75px !important;
+                top: calc(75px + env(safe-area-inset-top, 0px)) !important;
                 left: 15px !important;
                 width: calc(100vw - 30px) !important;
-                height: calc(100vh - 240px) !important; /* Fallback for vh */
-                height: calc(100dvh - 240px) !important; /* 75 top + 165 bottom gap */
+                height: calc(100dvh - 165px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
                 padding: 0 !important;
                 margin: 0 !important;
                 overflow: hidden !important;
@@ -1040,30 +1039,36 @@
     <!-- Welcome / Onboarding Modal (FULLSCREEN CENTERED) -->
     <div id="welcomeModal" class="welcome-overlay">
         <div class="welcome-card-centered">
-            <div class="welcome-badge">Nou în Sectorul 4</div>
-            <h1 class="welcome-title">Parcare Fără <span class="gradient-text">Efort</span>.</h1>
-            <p class="welcome-desc">Alătură-te ParkShare și găsește instant locul perfect sau transformă-ți locul tău în venit pasiv, sigur și simplu.</p>
+            <!-- Logo-ul aplicației adăugat pentru a fi clar unde se află utilizatorul -->
+            <div style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; color: var(--primary);">
+                <i data-lucide="map-pin" style="width: 28px; height: 28px;"></i>
+                <span style="font-size: 1.5rem; font-weight: 800; font-family: 'Outfit', sans-serif;">ParkShare</span>
+            </div>
+
+            <div class="welcome-badge" style="margin-bottom: 1.5rem;">Nou în Sectorul 4</div>
+            <h1 class="welcome-title" style="margin-bottom: 1rem;">Parcare Fără <span class="gradient-text">Efort</span>.</h1>
+            <p class="welcome-desc" style="margin-bottom: 2.5rem; font-size: 1.1rem;">Alătură-te ParkShare și găsește instant locul perfect sau transformă-ți locul tău în venit pasiv, sigur și simplu.</p>
             
-            <div class="welcome-features-row">
-                <div class="w-feat-item">
-                    <div class="w-feat-icon"><i data-lucide="shield-check"></i></div>
-                    <h4>100% Sigur</h4>
-                    <span>Locuri verificate GIS</span>
+            <div class="welcome-features-row" style="display: flex; justify-content: center; gap: 1.5rem; margin-bottom: 2.5rem; flex-wrap: wrap;">
+                <div class="w-feat-item" style="flex: 1; min-width: 90px; max-width: 120px;">
+                    <div class="w-feat-icon" style="width: 45px; height: 45px;"><i data-lucide="shield-check" style="width: 22px; height: 22px;"></i></div>
+                    <h4 style="font-size: 0.95rem; text-align: center;">100% Sigur</h4>
+                    <span style="font-size: 0.75rem; text-align: center; line-height: 1.2;">Locuri verificate GIS</span>
                 </div>
-                <div class="w-feat-item">
-                    <div class="w-feat-icon"><i data-lucide="zap"></i></div>
-                    <h4>Instant</h4>
-                    <span>Rezervă în secunde</span>
+                <div class="w-feat-item" style="flex: 1; min-width: 90px; max-width: 120px;">
+                    <div class="w-feat-icon" style="width: 45px; height: 45px;"><i data-lucide="zap" style="width: 22px; height: 22px;"></i></div>
+                    <h4 style="font-size: 0.95rem; text-align: center;">Instant</h4>
+                    <span style="font-size: 0.75rem; text-align: center; line-height: 1.2;">Rezervă în secunde</span>
                 </div>
-                <div class="w-feat-item">
-                    <div class="w-feat-icon"><i data-lucide="wallet"></i></div>
-                    <h4>Monetizează</h4>
-                    <span>Câștigă bani zilnic</span>
+                <div class="w-feat-item" style="flex: 1; min-width: 90px; max-width: 120px;">
+                    <div class="w-feat-icon" style="width: 45px; height: 45px;"><i data-lucide="wallet" style="width: 22px; height: 22px;"></i></div>
+                    <h4 style="font-size: 0.95rem; text-align: center;">Monetizează</h4>
+                    <span style="font-size: 0.75rem; text-align: center; line-height: 1.2;">Câștigă bani zilnic</span>
                 </div>
             </div>
 
-            <button class="btn-hero" onclick="openRegisterFromWelcome()">Creează Cont Acum</button>
-            <button class="btn-skip" onclick="closeWelcome()">Voi explora mai întâi site-ul</button>
+            <button class="btn-hero" onclick="openRegisterFromWelcome()" style="width: 100%; max-width: 300px; margin: 0 auto; padding: 1.2rem; font-size: 1.1rem;">Creează Cont Acum</button>
+            <button class="btn-skip" onclick="closeWelcome()" style="margin-top: 1.5rem; font-size: 0.9rem;">Voi explora mai întâi site-ul</button>
         </div>
     </div>
 
@@ -1391,7 +1396,7 @@
         </section>
 
         <!-- My Spots Section -->
-        <section id="my-spots" style="display: none; padding-top: 100px;">
+        <section id="my-spots" style="display: none; padding-top: calc(100px + env(safe-area-inset-top, 0px));">
             <div class="container">
                 <div class="section-header" style="text-align: left; margin-bottom: 2rem;">
                     <h2 class="section-title">Panou de Control Parcare</h2>
@@ -1783,7 +1788,7 @@
     </div>
 
     <!-- Admin Dashboard Section -->
-    <section id="admin" style="display: none; padding-top: 100px;">
+    <section id="admin" style="display: none; padding-top: calc(100px + env(safe-area-inset-top, 0px));">
         <div class="container">
             <div class="section-header" style="text-align: left; margin-bottom: 2rem;">
                 <h2 class="section-title">Panou de Administrare</h2>
@@ -1831,34 +1836,68 @@
         @media (max-width: 768px) {
             .chat-fs {
                 position: fixed !important;
-                top: 0 !important;
+                bottom: 0 !important;
                 left: 0 !important;
                 width: 100vw !important;
-                height: var(--chat-h, 100vh) !important;
+                height: 100dvh !important;
                 max-width: none !important;
                 max-height: none !important;
                 border-radius: 0 !important;
                 margin: 0 !important;
+                padding-top: env(safe-area-inset-top, 0px) !important;
+                padding-bottom: env(safe-area-inset-bottom, 0px) !important;
             }
         }
     </style>
-    <script>
-        // Adjust chat height when mobile keyboard opens/closes
-        if (window.visualViewport) {
-            const updateChatHeight = () => {
-                const h = window.visualViewport.height;
-                document.documentElement.style.setProperty('--chat-h', h + 'px');
-                // Also scroll the input into view
-                const chatInput = document.getElementById('chatInput');
-                if (chatInput && document.activeElement === chatInput) {
-                    setTimeout(() => chatInput.scrollIntoView({ block: 'end', behavior: 'smooth' }), 50);
-                }
-            };
-            window.visualViewport.addEventListener('resize', updateChatHeight);
-            window.visualViewport.addEventListener('scroll', updateChatHeight);
-            updateChatHeight();
+    <style>
+        /* The ultimate fix for iOS Safari PWA: Make chat a static page flow */
+        @media (max-width: 768px) {
+            body:has(#chatModal.active) {
+                overflow: visible !important;
+                background: #0f172a !important;
+            }
+            body:has(#chatModal.active) > *:not(#chatModal, script, style) {
+                visibility: hidden !important;
+                position: absolute !important;
+                top: -9999px !important;
+                height: 0 !important;
+            }
+            #chatModal.active {
+                position: static !important;
+                display: flex !important;
+                flex-direction: column !important;
+                width: 100vw !important;
+                min-height: 100vh !important;
+                height: auto !important;
+                background: #0f172a !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                z-index: 99999 !important;
+            }
+            #chatModal:not(.active) {
+                display: none !important;
+            }
+            .chat-fs {
+                position: static !important;
+                width: 100% !important;
+                flex: 1 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                max-width: none !important;
+                max-height: none !important;
+                border-radius: 0 !important;
+                margin: 0 !important;
+                padding-top: env(safe-area-inset-top, 0px) !important;
+                padding-bottom: 0 !important;
+                box-shadow: none !important;
+                transform: none !important;
+            }
+            #chatMessages {
+                flex: 1 1 auto !important;
+            }
+            /* Input container stays at the bottom of the flex column naturally */
         }
-    </script>
+    </style>
     <div id="chatModal" class="modal-overlay">
         <div class="chat-fs" style="padding: 0; display: flex; flex-direction: column; background: rgba(15, 23, 42, 0.95);">
             <div style="padding: 1rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2);">
@@ -1877,7 +1916,18 @@
             </div>
             
             <div id="chatMessages" style="flex: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
-                <!-- Mesajele vor apărea aici -->
+                <div style="align-self: flex-start; background: rgba(255,255,255,0.1); padding: 0.75rem 1rem; border-radius: 16px; border-bottom-left-radius: 4px; max-width: 80%;">
+                    <p style="margin: 0; color: white; font-size: 0.95rem;">Salut! Mai este disponibil locul?</p>
+                    <span style="font-size: 0.7rem; color: rgba(255,255,255,0.5); margin-top: 4px; display: block;">16:20</span>
+                </div>
+                <div style="align-self: flex-end; background: var(--primary); padding: 0.75rem 1rem; border-radius: 16px; border-bottom-right-radius: 4px; max-width: 80%;">
+                    <p style="margin: 0; color: white; font-size: 0.95rem;">Salut! Da, te aștept. Ajungi curând?</p>
+                    <span style="font-size: 0.7rem; color: rgba(255,255,255,0.7); margin-top: 4px; display: block; text-align: right;">16:22</span>
+                </div>
+                <div style="align-self: flex-start; background: rgba(255,255,255,0.1); padding: 0.75rem 1rem; border-radius: 16px; border-bottom-left-radius: 4px; max-width: 80%;">
+                    <p style="margin: 0; color: white; font-size: 0.95rem;">În 5 minute sunt acolo, mulțumesc!</p>
+                    <span style="font-size: 0.7rem; color: rgba(255,255,255,0.5); margin-top: 4px; display: block;">16:24</span>
+                </div>
             </div>
             
             <div style="padding: 1rem; border-top: 1px solid rgba(255,255,255,0.05); display: flex; gap: 0.5rem; background: rgba(0,0,0,0.2);">

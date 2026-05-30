@@ -1247,88 +1247,76 @@ function initMap() {
 // --- GIS Logic (Global Scope) ---
 
 async function loadS4Polygons() {
-    try {
-        console.log("Downloading Sector 4 polygons...");
-        showToast("Se încarcă parcările din Sectorul 4...", false);
-        
-        let response;
-        let success = false;
-        let diagnosticMsg = "Unknown";
-        
-        // 0. Workaround for file:// protocol without a server
-        if (window.S4_POINTS) {
-            console.log("Using pre-loaded S4_POINTS from file:// protocol workaround.");
-            const data = window.S4_POINTS;
-            allPolygons = data.features.filter(f => [0, 1, 2, 3, 4].includes(f.properties.ocupat));
-            console.log(`Loaded ${allPolygons.length} Sector 4 polygons (filtered) from memory.`);
-            showToast(`S-au încărcat ${allPolygons.length} parcări nominale/handicap.`);
-            renderVisiblePolygons();
-            return;
-        }
-        
-        // Fetch a specific file name that contains 'nominatim' to bypass the old stuck Service Worker, and has NO query string to avoid 404s
-        try {
-            response = await fetch('s4_points_nominatim.json', { cache: 'no-store' });
-            if (response.ok) {
-                success = true;
-            } else {
-                diagnosticMsg = "HTTP " + response.status;
-            }
-        } catch (e) {
-            console.warn("Relative fetch for s4_points.json failed", e);
-            diagnosticMsg = e.message || "Network Error";
-        }
-        
-        // If relative fetch failed, try local server fallback
-        if (!success) {
-            try {
-                // We use 127.0.0.1 instead of localhost to avoid ipv6 resolution issues sometimes causing fetch to fail
-                response = await fetch('http://127.0.0.1:8080/s4_points_nominatim.json', { cache: 'no-store' });
-                if (response.ok) {
-                    success = true;
-                    console.log("Successfully fetched points from local server fallback.");
-                } else {
-                    diagnosticMsg += " & Fallback HTTP " + response.status;
-                }
-            } catch (e) {
-                diagnosticMsg += " & Fallback " + (e.message || "Network Error");
-                console.warn("Local server fallback fetch for s4_points.json failed...", e);
-            }
-        }
-        
-        if (!success || !response) {
-            showToast("Eroare fetch (" + window.location.protocol + "): " + diagnosticMsg.substring(0, 50), true);
-            return;
-        }
-        
-        const data = await response.json();
-        allPolygons = data.features.filter(f => [0, 1, 2, 3, 4].includes(f.properties.ocupat));
-        console.log(`Loaded ${allPolygons.length} Sector 4 polygons (filtered).`);
-        showToast(`S-au încărcat ${allPolygons.length} parcări nominale/handicap.`);
-        renderVisiblePolygons();
-    } catch(e) { 
-        console.warn("S4 load failed", e); 
-        showToast("Eroare la procesarea parcărilor S4: " + e.message, true);
+    console.log("Sistem API Dinamic Inițializat. Datele nu mai sunt descărcate integral.");
+    showToast("Harta funcționează acum în mod optimizat (Bounding Box API).", false);
+    
+    // Dacă rulăm dintr-un fișier local fără server (fallback)
+    if (window.S4_POINTS) {
+        console.log("Fallback la S4_POINTS din memorie.");
+        allPolygons = window.S4_POINTS.features.filter(f => [0, 1, 2, 3, 4].includes(f.properties.ocupat));
     }
+    
+    renderVisiblePolygons();
 }
 
 function renderVisiblePolygons() {
     if(!polygonLayerMain) return; 
-    renderPolygonsForMap(mapFind, polygonLayerFind, false);
-    renderPolygonsForMap(mapList, polygonLayerList, true);
-    renderPolygonsForMap(map, polygonLayerMain, false);
+    
+    // Optimizare: Randăm doar hărțile care sunt vizibile pe ecran
+    if (document.getElementById('mapFind') && document.getElementById('mapFind').offsetParent !== null) {
+        renderPolygonsForMap(mapFind, polygonLayerFind, false);
+    }
+    if (document.getElementById('map-list') && document.getElementById('map-list').offsetParent !== null) {
+        renderPolygonsForMap(mapList, polygonLayerList, true);
+    }
+    if (document.getElementById('mapDashboard') && document.getElementById('mapDashboard').offsetParent !== null) {
+        renderPolygonsForMap(map, polygonLayerMain, false);
+    }
 }
 
-function renderPolygonsForMap(targetMap, targetLayer, isListMap) {
-    // Am readus pragul de afișare la zoom 19 pentru performanță maximă pe mobil
+async function renderPolygonsForMap(targetMap, targetLayer, isListMap) {
+    // Pragul de afișare la zoom 19 pentru performanță
     if (!targetMap || targetMap.getZoom() < 19) {
         targetLayer?.clearLayers();
         return;
     }
     const bounds = targetMap.getBounds();
+    
+    let visibleFeatures = [];
+    
+    // Verificăm dacă folosim API-ul nou sau varianta veche (fallback fără server)
+    if (window.S4_POINTS && typeof allPolygons !== 'undefined') {
+        visibleFeatures = allPolygons.filter(f => {
+            const coords = f.geometry.coordinates; 
+            if (!coords || coords.length !== 2) return false;
+            return bounds.contains(L.latLng(coords[1], coords[0]));
+        });
+    } else {
+        // Apel API Dinamic (Bounding Box)
+        try {
+            const n = bounds.getNorth();
+            const s = bounds.getSouth();
+            const e = bounds.getEast();
+            const w = bounds.getWest();
+            
+            // Limităm zecimalele pentru URL mai curat
+            const url = `/api/parking?n=${n.toFixed(6)}&s=${s.toFixed(6)}&e=${e.toFixed(6)}&w=${w.toFixed(6)}`;
+            
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("HTTP " + response.status);
+            visibleFeatures = await response.json();
+            
+        } catch (err) {
+            console.warn("API Bounding Box Error:", err);
+            // Dacă API-ul pică, nu ștergem markerele vechi
+            return;
+        }
+    }
+
+    // Ștergem markerele vechi doar după ce am descărcat cu succes datele noi
     targetLayer.clearLayers();
 
-        const getPolygonTypeText = (status) => {
+    const getPolygonTypeText = (status) => {
         switch(status) {
             case 0: return 'Loc nominal liber';
             case 1: return 'Loc nominal ocupat';
@@ -1347,12 +1335,6 @@ function renderPolygonsForMap(targetMap, targetLayer, isListMap) {
         if (status >= 0 && status <= 8) return `spot-status-${status}`;
         return 'spot-status-default';
     };
-
-    const visibleFeatures = allPolygons.filter(f => {
-        const coords = f.geometry.coordinates; // [lng, lat]
-        if (!coords || coords.length !== 2) return false;
-        return bounds.contains(L.latLng(coords[1], coords[0]));
-    });
 
     visibleFeatures.forEach(feature => {
         const props = feature.properties;
@@ -1378,6 +1360,11 @@ function renderPolygonsForMap(targetMap, targetLayer, isListMap) {
         if (targetMap === mapFind) {
             const isBlue = listedSpot && (listedSpot.status === 'available' || listedSpot.status === 'verified');
             if (!isBlue) return; // Sărim peste randarea acestui marker
+        }
+
+        // Pentru harta de ofertare (mapList), ascundem complet locurile care sunt deja listate/oferite
+        if (isListMap && listedSpot) {
+            return;
         }
 
         const isMine = listedSpot ? (listedSpot.owner === currentUser?.username) : false;
@@ -1908,9 +1895,6 @@ function initListForm() {
         
         const submitBtn = listForm.querySelector('button[type="submit"]');
         const originalBtnHtml = submitBtn.innerHTML;
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i data-lucide="loader" class="spin"></i> Se trimite...';
-        if (window.lucide) window.lucide.createIcons();
 
         try {
             // Auth check
@@ -1940,11 +1924,19 @@ function initListForm() {
                 showToast("Introdu un preț valid!", true);
                 return;
             }
+            if (parseFloat(priceVal) > 5) {
+                showToast("Suma maximă permisă este de 5 RON / oră!", true);
+                return;
+            }
 
             const price = parseFloat(priceVal);
             const type = document.getElementById('type').value;
             const description = document.getElementById('description')?.value || '';
             const address = document.getElementById('address').value || `Loc nominal ${spotNum}, Sector 4, București`;
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i data-lucide="loader" class="spin"></i> Se trimite...';
+            if (window.lucide) window.lucide.createIcons();
 
             // Read PDF as base64
             const pdfFile = selectedFile;

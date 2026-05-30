@@ -1,4 +1,4 @@
-const CACHE_NAME = 'parkshare-v5';
+const CACHE_NAME = 'parkshare-v15';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
