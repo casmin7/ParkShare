@@ -74,108 +74,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadState() {
     try {
-        console.log("Loading state from KVDB...");
-        const response = await fetch(DB_URL, { cache: 'no-store' });
-        if (response.ok) {
-            const data = await response.json();
-            if (Array.isArray(data)) {
-                // Keep only Sector 4 spots (filter out any legacy data from other sectors)
-                appState.spots = data.filter(s => {
-                    const lat = s.center ? s.center[0] : (s.lat || 0);
-                    const isOutsideS4 = (s.address && !s.address.includes("Sector 4") && s.address.includes("Sector")) || lat > 44.43;
-                    return !isOutsideS4;
-                });
-                console.log("State loaded and filtered:", appState.spots.length, "Sector 4 spots remaining");
-            }
+        // Așteptăm până la 10 secunde ca Firebase să se descarce și să se inițializeze
+        for(let i=0; i<100; i++) {
+            if(window.fbAPI) break;
+            await new Promise(r => setTimeout(r, 100));
+        }
+
+        if (!window.fbAPI) {
+            throw new Error("Firebase SDK timeout");
+        }
+
+        console.log("Loading spots from Firebase Firestore...");
+        const spots = await window.fbAPI.getAllActiveSpots();
+        
+        if (spots && spots.length > 0) {
+            // Păstrăm în memorie doar parcările valide (cu coordonate)
+            appState.spots = spots.filter(s => s.center || (s.lat && s.lng));
+            console.log(`State loaded: ${appState.spots.length} active spots from cloud.`);
+        } else {
+            console.log("No active spots in cloud database yet.");
+            appState.spots = [];
         }
     } catch (err) {
-        console.warn("Failed to load global state, using local fallback.", err);
-        const local = localStorage.getItem('parkshare_spots');
-        if (local) {
-            const data = JSON.parse(local);
-            appState.spots = data.filter(s => {
-                const lat = s.center ? s.center[0] : (s.lat || 0);
-                const isOutsideS4 = (s.address && !s.address.includes("Sector 4") && s.address.includes("Sector")) || lat > 44.43;
-                return !isOutsideS4;
-            });
-        }
+        console.warn("Failed to load spots from Firebase.", err);
+        appState.spots = [];
     }
-    
-    // Check if we need to seed Sector 4 mock spots
-    const hasMockSpots = appState.spots.some(s => s.isMock);
-    if (!hasMockSpots) {
-        seedMockSpots();
-    }
-
-    // --- Migration: Transfer ALL spots to admin ---
-    let migrated = false;
-    appState.spots.forEach(s => {
-        if (s.owner && s.owner !== 'admin') {
-            console.log(`Migrating spot ${s.id} from ${s.owner} to admin`);
-            s.owner = 'admin';
-            s.ownerFirstName = 'Admin';
-            migrated = true;
-        }
-    });
-    if (migrated || !hasMockSpots) {
-        await saveState();
-    }
-}
-
-function seedMockSpots() {
-    console.log("Seeding 1000 clustered GIS spots with 50% active listings...");
-    
-    massiveMockSpots.forEach((data, index) => {
-        const isActiveListing = index % 2 === 0; // 50% sunt la închiriat
-        const belongsToMe = index % 4 === 0; // O parte din ele sunt tot ale mele, dar listate
-        
-        const owner = belongsToMe ? (currentUser?.username || "admin") : `User_${100 + index}`;
-        const status = isActiveListing ? 'available' : 'verified';
-        
-        // Generăm intervale orare aleatorii pentru locurile disponibile
-        let availability = null;
-        if (isActiveListing) {
-            const today = new Date().toISOString().split('T')[0];
-            availability = { date: today, start: "00:00", end: "23:59" };
-        }
-
-        appState.spots.push({
-            id: 2000 + index,
-            owner: owner,
-            ownerFirstName: belongsToMe ? (currentUser?.firstName || "Proprietar") : "Utilizator",
-            spotNumber: data.num,
-            parkingCode: data.code,
-            gpsFingerprint: `${data.lat.toFixed(6)},${data.lng.toFixed(6)}`,
-            address: `Sector 4, Loc ${data.num}, Parcare ${data.code}`,
-            price: 3 + Math.floor(Math.random() * 3), // Preț între 3 și 5 RON
-            type: "Sedan",
-            center: [data.lat, data.lng],
-            status: status,
-            availability: availability,
-            description: isActiveListing ? "Loc disponibil pentru închiriere pe intervale orare." : "Locul tău verificat.",
-            listedAt: new Date().toISOString(),
-            isMock: true
-        });
-    });
 }
 
 async function saveState() {
-    const dataStr = JSON.stringify(appState.spots);
-    localStorage.setItem('parkshare_spots', dataStr);
-    
-    try {
-        console.log("Saving state to KVDB...");
-        const response = await fetch(DB_URL, { 
-            method: 'POST', 
-            body: dataStr,
-            headers: { 'Content-Type': 'application/json' }
-        });
-        if (!response.ok) throw new Error("Server rejected save");
-        console.log("State saved successfully to cloud.");
-    } catch (err) { 
-        console.error("CLOUD SAVE FAILED! Data remains local only.", err);
-        // showToast("Eroare la salvarea în cloud! Datele sunt salvate doar local.", true);
-    }
+    // Funcția saveState() globală (care salva tot array-ul) devine redundantă
+    // Deoarece Firebase lucrează cu documente individuale (addSpot / updateSpot)
+    // Lăsăm funcția goală pentru backward compatibility în caz că mai e chemată din greșeală
+    console.log("saveState() a fost înlocuit cu operațiuni atomice Firebase.");
 }
 
 function startClock() {
@@ -399,31 +329,23 @@ document.getElementById('registerForm')?.addEventListener('submit', async (e) =>
         return showToast("Parola trebuie să aibă minim 8 caractere și să conțină cel puțin o cifră!", true);
     }
 
-    const user = {
+    const userData = {
         firstName: document.getElementById('regFirstName').value.trim(),
         lastName: document.getElementById('regLastName').value.trim(),
         username: document.getElementById('regUsername').value.trim(),
-        email: email,
         phone: phone,
-        password: password,
         avatarBase64: ""
     };
 
     try {
-        const res = await fetch(USERS_URL);
-        let users = res.ok ? (await res.json() || []) : [];
-        if (users.find(u => u.username === user.username)) return showToast("Username deja existent!", true);
+        // Apelează Firebase Register
+        const fbUser = await window.fbAPI.register(email, password, userData);
         
-        users.push(user);
-        await fetch(USERS_URL, { method: 'POST', body: JSON.stringify(users) });
-        
-        currentUser = user;
-        localStorage.setItem('parkshare_user', JSON.stringify(user));
-        
-        // Marcăm ca onboarded la înregistrare
+        currentUser = { email, ...userData };
+        localStorage.setItem('parkshare_user', JSON.stringify(currentUser));
         localStorage.setItem('parkshare_onboarded', 'true');
         
-        // Închidem modalele cu prioritate !important
+        // Închidem modalele
         const regModal = document.getElementById('registerModal');
         const welcomeModal = document.getElementById('welcomeModal');
         if (regModal) {
@@ -435,29 +357,49 @@ document.getElementById('registerForm')?.addEventListener('submit', async (e) =>
         }
 
         renderAuthUI();
-        showToast(`Bine ai venit, ${user.firstName}! Cont creat cu succes.`);
-    } catch (err) { showToast("Eroare la înregistrare", true); }
+        showToast(`Bine ai venit, ${userData.firstName}! Cont creat în cloud cu succes.`);
+    } catch (err) { 
+        console.error(err);
+        if(err.code === 'auth/email-already-in-use') {
+            showToast("Acest email este deja înregistrat!", true);
+        } else {
+            showToast("Eroare la înregistrare: " + err.message, true);
+        }
+    }
 });
 
 document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const contact = document.getElementById('loginContact').value;
+    const contact = document.getElementById('loginContact').value.trim();
     const pass = document.getElementById('loginPassword').value;
+    
+    // Transformăm telefonul în email fictiv dacă user-ul introduce telefon
+    let emailToUse = contact;
+    if (/^07\d{8}$/.test(contact)) {
+        emailToUse = `${contact}@parkshare.local`;
+    }
 
     try {
-        const res = await fetch(USERS_URL);
-        const users = res.ok ? (await res.json() || []) : [];
-        const user = users.find(u => (u.username === contact || u.contact === contact || u.email === contact) && u.password === pass);
-        if (user) {
-            currentUser = user;
-            localStorage.setItem('parkshare_user', JSON.stringify(user));
-            document.getElementById('loginModal').classList.remove('active');
-            renderAuthUI();
-            showToast(`Salut, ${user.firstName}!`);
+        // Apelează Firebase Login
+        const fbUser = await window.fbAPI.login(emailToUse, pass);
+        
+        // Preluăm profilul complet din Firestore
+        const profile = await window.fbAPI.getUserProfile(fbUser.uid);
+        if (profile) {
+            currentUser = profile;
+            localStorage.setItem('parkshare_user', JSON.stringify(currentUser));
         } else {
-            showToast("Date incorecte!", true);
+            // Fallback în caz că datele din Firestore lipsesc
+            currentUser = { email: fbUser.email, firstName: "Utilizator" };
         }
-    } catch (err) { showToast("Eroare la conectare", true); }
+        
+        document.getElementById('loginModal').classList.remove('active');
+        renderAuthUI();
+        showToast(`Salut, ${currentUser.firstName}! Logat din cloud.`);
+    } catch (err) { 
+        console.error(err);
+        showToast("Date incorecte sau cont inexistent!", true); 
+    }
 });
 
 document.getElementById('profileForm')?.addEventListener('submit', async (e) => {
@@ -497,12 +439,18 @@ document.getElementById('profileForm')?.addEventListener('submit', async (e) => 
     }
 });
 
-document.getElementById('logoutBtn')?.addEventListener('click', () => {
-    currentUser = null;
-    localStorage.removeItem('parkshare_user');
-    document.getElementById('profileModal').classList.remove('active');
-    renderAuthUI();
-    window.location.hash = '#hero';
+document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+    try {
+        await window.fbAPI.logout();
+        currentUser = null;
+        localStorage.removeItem('parkshare_user');
+        document.getElementById('profileModal').classList.remove('active');
+        renderAuthUI();
+        window.location.hash = '#hero';
+        showToast("Te-ai deconectat cu succes.");
+    } catch(err) {
+        showToast("Eroare la deconectare.", true);
+    }
 });
 
 // --- Admin Panel ---
@@ -548,7 +496,7 @@ function renderAdminPanel() {
             </td>
             <td style="padding: 1.25rem 1.5rem;">
                 ${hasPdf
-                    ? `<button class="btn btn-sm btn-outline" onclick="downloadContract(${spot.id})" 
+                    ? `<button class="btn btn-sm btn-outline" onclick="downloadContract(\'${spot.id}\')" 
                            style="display:flex; align-items:center; gap:0.4rem;">
                            📄 ${spot.contractName || 'Contract.pdf'}
                        </button>`
@@ -560,12 +508,12 @@ function renderAdminPanel() {
             </td>
             <td style="padding: 1.25rem 1.5rem; text-align: right; white-space: nowrap;">
                 <button class="btn btn-sm ${spot.status === 'verified' ? 'btn-primary' : 'btn-outline'}" 
-                    onclick="approveSpot(${spot.id})" 
+                    onclick="approveSpot(\'${spot.id}\')" 
                     style="margin-right: 0.5rem; ${spot.status === 'verified' ? 'cursor:default;opacity:0.7;' : ''}">
                     ${spot.status === 'verified' ? '✓ Aprobat' : 'Aprobă'}
                 </button>
                 <button class="btn btn-sm ${spot.status === 'rejected' ? 'btn-primary' : 'btn-outline'}" 
-                    onclick="rejectSpot(${spot.id})" 
+                    onclick="rejectSpot(\'${spot.id}\')" 
                     style="border-color: #ef4444; color: ${spot.status === 'rejected' ? 'white' : '#ef4444'}; ${spot.status === 'rejected' ? 'background:#ef4444;cursor:default;opacity:0.7;' : ''}">
                     ${spot.status === 'rejected' ? '✗ Respins' : 'Refuză'}
                 </button>
@@ -636,14 +584,19 @@ function renderMySpots() {
                             <i data-lucide="message-circle" style="width: 14px; height: 14px;"></i> Mesaj
                         </button>
                     </div>
-                    <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank" class="btn btn-sm btn-primary btn-block" style="background: #f59e0b; border-color: #f59e0b; margin-top: 0.5rem; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
-                        <i data-lucide="navigation" style="width: 14px; height: 14px;"></i> Vezi Drumul spre Loc
-                    </a>
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 0.5rem; margin-top: 0.5rem;">
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank" class="btn btn-sm btn-primary btn-block" style="background: #34a853; border-color: #34a853; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 0.5rem; font-weight: 700; padding: 0.75rem;">
+                            <i data-lucide="map-pin" style="width: 16px; height: 16px;"></i> Deschide în Google Maps
+                        </a>
+                        <button class="btn btn-sm btn-primary btn-block" style="background: var(--primary); border-color: var(--primary); font-weight: 700; padding: 0.75rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem;" onclick="openReviewModal('${spot.id}', '${spot.spotNumber}')">
+                            <i data-lucide="check-circle" style="width: 16px; height: 16px;"></i> Finalizează Parcarea
+                        </button>
+                    </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem;">
-                        <button class="btn btn-sm btn-outline btn-block" style="border-color: var(--glass-border); color: var(--text-muted); display: flex; justify-content: center; align-items: center; gap: 0.5rem;" onclick="cancelBooking(${spot.id})">
+                        <button class="btn btn-sm btn-outline btn-block" style="border-color: var(--glass-border); color: var(--text-muted); display: flex; justify-content: center; align-items: center; gap: 0.5rem;" onclick="cancelBooking(\'${spot.id}\')">
                             <i data-lucide="x-circle" style="width: 14px; height: 14px;"></i> Anulează
                         </button>
-                        <button class="btn btn-sm btn-outline btn-block" style="border-color: #ef4444; color: #ef4444; background: rgba(239, 68, 68, 0.05); display: flex; justify-content: center; align-items: center; gap: 0.5rem;" onclick="openIncidentModal(${spot.id})">
+                        <button class="btn btn-sm btn-outline btn-block" style="border-color: #ef4444; color: #ef4444; background: rgba(239, 68, 68, 0.05); display: flex; justify-content: center; align-items: center; gap: 0.5rem;" onclick="openIncidentModal(\'${spot.id}\')">
                             <i data-lucide="alert-triangle" style="width: 14px; height: 14px;"></i> Alertă Abuz
                         </button>
                     </div>
@@ -691,7 +644,7 @@ function renderMySpots() {
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
                                 <span style="font-weight: 600; color: white;">${spot.price || 0} RON/oră</span>
                                 ${isBooked ? '' : `
-                                <button class="btn-icon" onclick="editSpotPrice(${spot.id})" style="padding: 2px; height: 24px; width: 24px;" title="Modifică Tarif">
+                                <button class="btn-icon" onclick="editSpotPrice(\'${spot.id}\')" style="padding: 2px; height: 24px; width: 24px;" title="Modifică Tarif">
                                     <i data-lucide="edit-2" style="width: 14px; height: 14px; color: var(--primary);"></i>
                                 </button>
                                 `}
@@ -724,14 +677,14 @@ function renderMySpots() {
                         <button class="btn btn-sm btn-primary btn-block" style="background: #475569; border-color: #475569; opacity: 0.5; cursor: not-allowed;" disabled title="Locul trebuie aprobat de administrator înainte de a fi listat.">
                             <i data-lucide="clock" style="width: 14px; height: 14px; margin-right: 4px;"></i> Așteaptă Aprobare
                         </button>
-                        <button class="btn btn-sm btn-outline btn-block" style="border-color: #ef4444; color: #ef4444;" onclick="deleteSpot(${spot.id})">
+                        <button class="btn btn-sm btn-outline btn-block" style="border-color: #ef4444; color: #ef4444;" onclick="deleteSpot(\'${spot.id}\')">
                             Șterge
                         </button>
                         ` : `
-                        <button class="btn btn-sm btn-primary btn-block" style="background: ${isBooked ? '#475569' : '#3b82f6'}; border-color: ${isBooked ? '#475569' : '#3b82f6'}; ${isBooked ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isBooked ? 'disabled' : `onclick="openListSpotModal(${spot.id})"`} title="${isBooked ? 'Nu poți modifica un loc cât timp este rezervat.' : ''}">
+                        <button class="btn btn-sm btn-primary btn-block" style="background: ${isBooked ? '#475569' : '#3b82f6'}; border-color: ${isBooked ? '#475569' : '#3b82f6'}; ${isBooked ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isBooked ? 'disabled' : `onclick="openListSpotModal(\'${spot.id}\')"`} title="${isBooked ? 'Nu poți modifica un loc cât timp este rezervat.' : ''}">
                             <i data-lucide="clock" style="width: 14px; height: 14px; margin-right: 4px;"></i> ${isBooked ? 'Indisponibil' : 'Listează Acum'}
                         </button>
-                        <button class="btn btn-sm btn-outline btn-block" style="border-color: #ef4444; color: #ef4444; ${isBooked ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isBooked ? 'disabled' : `onclick="deleteSpot(${spot.id})"`} title="${isBooked ? 'Nu poți șterge un loc rezervat.' : ''}">
+                        <button class="btn btn-sm btn-outline btn-block" style="border-color: #ef4444; color: #ef4444; ${isBooked ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${isBooked ? 'disabled' : `onclick="deleteSpot(\'${spot.id}\')"`} title="${isBooked ? 'Nu poți șterge un loc rezervat.' : ''}">
                             Șterge
                         </button>
                         `}
@@ -804,7 +757,16 @@ function startAllCountdowns() {
                 timerEl.style.color = "#4ade80"; // Verde pentru activ
                 
                 if (diff < 300000) timerEl.style.color = "#f59e0b"; // Portocaliu sub 5 min
-
+                
+                // 15-minute warning (900,000 ms)
+                if (diff <= 900000 && diff > 899000 && !spot._notified15m) {
+                    spot._notified15m = true;
+                    window.sendPushNotification(
+                        "Timp la limită!", 
+                        "Atenție, expiră timpul în 15 min! Eliberează locul sau cere o prelungire.",
+                        "alert"
+                    );
+                }
                 const h = Math.floor(diff / 3600000);
                 const m = Math.floor((diff % 3600000) / 60000);
                 const s = Math.floor((diff % 60000) / 1000);
@@ -1066,7 +1028,47 @@ window.requestNotificationPermission = async () => {
     return false;
 };
 
-window.sendPushNotification = async (title, body) => {
+window.playNotificationSound = () => {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // WhatsApp-like double beep
+        const playBeep = (freq, startTime, duration) => {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime + startTime);
+            
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime + startTime);
+            gainNode.gain.linearRampToValueAtTime(1, audioCtx.currentTime + startTime + 0.05);
+            gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + startTime + duration);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.start(audioCtx.currentTime + startTime);
+            oscillator.stop(audioCtx.currentTime + startTime + duration);
+        };
+
+        playBeep(880, 0, 0.1);
+        playBeep(880, 0.15, 0.1);
+    } catch (e) {
+        console.log("AudioContext not supported or blocked");
+    }
+};
+
+window.sendPushNotification = async (title, body, type = 'default') => {
+    // Play sound & Vibrate strongly (WhatsApp style) if it's a message or alert
+    window.playNotificationSound();
+    if (navigator.vibrate) {
+        if (type === 'message') {
+            navigator.vibrate([200, 100, 200]); // Short double vibrate
+        } else if (type === 'alert') {
+            navigator.vibrate([500, 200, 500, 200, 500]); // Long emergency vibrate
+        }
+    }
+
     const hasPermission = await window.requestNotificationPermission();
     if (hasPermission) {
         if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
@@ -1074,8 +1076,8 @@ window.sendPushNotification = async (title, body) => {
                 const reg = await navigator.serviceWorker.ready;
                 reg.showNotification(title, {
                     body: body,
-                    vibrate: [200, 100, 200, 100, 200],
-                    requireInteraction: true
+                    vibrate: type === 'alert' ? [500, 200, 500] : [200, 100, 200],
+                    requireInteraction: type === 'alert'
                 });
             } catch (e) {
                 new Notification(title, { body: body });
@@ -1247,16 +1249,28 @@ function initMap() {
 // --- GIS Logic (Global Scope) ---
 
 async function loadS4Polygons() {
-    console.log("Sistem API Dinamic Inițializat. Datele nu mai sunt descărcate integral.");
-    showToast("Harta funcționează acum în mod optimizat (Bounding Box API).", false);
-    
-    // Dacă rulăm dintr-un fișier local fără server (fallback)
     if (window.S4_POINTS) {
-        console.log("Fallback la S4_POINTS din memorie.");
         allPolygons = window.S4_POINTS.features.filter(f => [0, 1, 2, 3, 4].includes(f.properties.ocupat));
+        renderVisiblePolygons();
+        return;
     }
-    
-    renderVisiblePolygons();
+
+    // Load dynamically so it doesn't block the UI thread during initial startup
+    console.log("Loading S4 Polygons (12MB) in the background...");
+    const script = document.createElement('script');
+    script.src = "s4_points_nominatim.js";
+    script.async = true;
+    script.onload = () => {
+        console.log("S4_POINTS loaded successfully.");
+        if (window.S4_POINTS) {
+            allPolygons = window.S4_POINTS.features.filter(f => [0, 1, 2, 3, 4].includes(f.properties.ocupat));
+            renderVisiblePolygons();
+        }
+    };
+    script.onerror = () => {
+        console.warn("Failed to load s4_points_nominatim.js");
+    };
+    document.body.appendChild(script);
 }
 
 function renderVisiblePolygons() {
@@ -1358,7 +1372,7 @@ async function renderPolygonsForMap(targetMap, targetLayer, isListMap) {
 
         // Pentru harta de căutare (mapFind), arătăm DOAR locurile disponibile (albastre)
         if (targetMap === mapFind) {
-            const isBlue = listedSpot && (listedSpot.status === 'available' || listedSpot.status === 'verified');
+            const isBlue = listedSpot && (listedSpot.status === 'available' || listedSpot.status === 'verified' || listedSpot.status === 'pending_verification');
             if (!isBlue) return; // Sărim peste randarea acestui marker
         }
 
@@ -1448,6 +1462,9 @@ async function renderPolygonsForMap(targetMap, targetLayer, isListMap) {
                     <div style="margin-bottom: 10px;">
                         <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: white;">Locul ${listedSpot.spotNumber}</h3>
                         <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">${listedSpot.address}</p>
+                        <div class="spot-rating-container" style="margin-top: 4px; display: flex; align-items: center; gap: 4px; min-height: 18px;">
+                            <span style="color: var(--text-muted); font-size: 0.8rem;">Se încarcă rating...</span>
+                        </div>
                     </div>
                     
                     ${isBooked ? 
@@ -1461,13 +1478,29 @@ async function renderPolygonsForMap(targetMap, targetLayer, isListMap) {
                          </div>
                          ${isMine ? 
                             `<button class="btn btn-primary btn-block" style="padding: 10px; font-size: 0.9rem; font-weight: 700; background: #4ade80; border-color: #4ade80; color: #064e3b;" 
-                                onclick="openAvailabilityModal(${listedSpot.id})">Setează Disponibilitate</button>` :
+                                onclick="openAvailabilityModal('${listedSpot.id}')">Setează Disponibilitate</button>` :
                             `<button class="btn btn-primary btn-block" style="padding: 10px; font-size: 0.9rem; font-weight: 700;" 
-                                onclick="bookSpot(${listedSpot.id})">Rezervă Acum</button>`
+                                onclick="bookSpot('${listedSpot.id}')">Rezervă Acum</button>`
                          }`
                     }
                 </div>
             `, { className: 'custom-popup', autoPan: true, autoPanPadding: [50, 50], offset: [0, -5] });
+            
+            // Fetch rating when popup opens
+            marker.on('popupopen', async (e) => {
+                const popupNode = e.popup._contentNode;
+                if (!popupNode) return;
+                const ratingContainer = popupNode.querySelector('.spot-rating-container');
+                if (ratingContainer) {
+                    const rating = await window.fbAPI.getSpotRating(listedSpot.id);
+                    if (rating.count > 0) {
+                        ratingContainer.innerHTML = `<i data-lucide="star" style="width: 14px; height: 14px; color: #facc15; fill: #facc15; vertical-align: middle;"></i> <span style="color: #facc15; font-weight: 700;">${rating.average}</span> <span style="color: var(--text-muted); font-size: 0.75rem;">(${rating.count} review-uri)</span>`;
+                        lucide.createIcons({ root: ratingContainer });
+                    } else {
+                        ratingContainer.innerHTML = `<span style="color: var(--text-muted); font-size: 0.8rem;">Fără review-uri încă</span>`;
+                    }
+                }
+            });
         }
         
         marker.on('click', (e) => L.DomEvent.stopPropagation(e.originalEvent));
@@ -1828,24 +1861,35 @@ window.confirmBooking = async () => {
         return;
     }
 
-    // Save booking
-    spot.status = 'booked';
-    spot.bookedBy = currentUser.username;
-    spot.bookedAt = Date.now();
-    
-    // Update availability to the selected range for countdown display
-    spot.availability = {
-        ...spot.availability,
-        start: startVal,
-        end: endVal
-    };
+    // Save booking to Firebase
+    try {
+        const bookingData = {
+            startTime: startVal,
+            endTime: endVal,
+            bookedBy: currentUser.username,
+            durationHours: (endTotal - startTotal) / 60
+        };
+        
+        await window.fbAPI.bookSpot(spot.id, bookingData);
+        
+        // Update local state for immediate UI reflection
+        spot.status = 'booked';
+        spot.bookedBy = currentUser.username;
+        spot.bookedAt = Date.now();
+        spot.availability = {
+            ...spot.availability,
+            start: startVal,
+            end: endVal
+        };
 
-    await saveState();
-    document.getElementById('bookingModal').classList.remove('active');
-    renderVisiblePolygons();
-    renderMySpots();
-    window.sendPushNotification("Rezervare Confirmată", `Ai rezervat cu succes locul ${spot.spotNumber} până la ora ${endVal}. ✓`);
-    navigateTo('#my-spots');
+        document.getElementById('bookingModal').classList.remove('active');
+        renderVisiblePolygons();
+        renderMySpots();
+        window.sendPushNotification("Rezervare Confirmată", `Ai rezervat cu succes locul ${spot.spotNumber} până la ora ${endVal}. ✓`);
+        navigateTo('#my-spots');
+    } catch (err) {
+        showToast("Eroare la rezervare! Te rugăm să încerci din nou.", true);
+    }
 };
 
 window.cancelBooking = async (spotId) => {
@@ -1854,16 +1898,111 @@ window.cancelBooking = async (spotId) => {
     const spot = appState.spots.find(s => s.id === spotId);
     if (!spot) return;
 
-    spot.status = 'available';
-    delete spot.bookedBy;
-    delete spot.bookedAt;
-    
-    await saveState();
-    renderMySpots();
-    renderVisiblePolygons();
-    showToast("Rezervare anulată cu succes!");
+    try {
+        // În viața reală am șterge sau marca `booking`-ul ca anulat. 
+        // Aici doar resetăm statusul spotului în Firestore
+        await window.fbAPI.updateSpot(spot.id, { 
+            status: 'available',
+            bookedBy: null,
+            bookedAt: null
+        });
+
+        // Update local state
+        spot.status = 'available';
+        delete spot.bookedBy;
+        delete spot.bookedAt;
+        
+        renderMySpots();
+        renderVisiblePolygons();
+        showToast("Rezervare anulată cu succes!");
+    } catch (err) {
+        showToast("Eroare la anulare!", true);
+    }
 };
 
+// --- REVIEW & RATING LOGIC ---
+window.openReviewModal = (spotId, spotNumber) => {
+    document.getElementById('reviewSpotId').value = spotId;
+    document.getElementById('reviewSpotName').textContent = spotNumber || 'N/A';
+    document.getElementById('reviewComment').value = '';
+    document.getElementById('reviewSelectedRating').value = '0';
+    
+    // Reset stars
+    document.querySelectorAll('.rating-star').forEach(s => s.classList.remove('active'));
+    
+    document.getElementById('reviewModal').classList.add('active');
+};
+
+// Initialize star rating logic
+document.addEventListener('DOMContentLoaded', () => {
+    const stars = document.querySelectorAll('.rating-star');
+    stars.forEach(star => {
+        star.addEventListener('click', (e) => {
+            const value = parseInt(e.currentTarget.getAttribute('data-value'));
+            document.getElementById('reviewSelectedRating').value = value;
+            
+            // Highlight stars up to selected value
+            stars.forEach(s => {
+                if (parseInt(s.getAttribute('data-value')) <= value) {
+                    s.classList.add('active');
+                } else {
+                    s.classList.remove('active');
+                }
+            });
+        });
+    });
+});
+
+window.submitReview = async () => {
+    const spotId = document.getElementById('reviewSpotId').value;
+    const rating = parseInt(document.getElementById('reviewSelectedRating').value);
+    const comment = document.getElementById('reviewComment').value.trim();
+    
+    if (!rating || rating === 0) {
+        showToast("Te rugăm să selectezi un număr de stele (1-5)!", true);
+        return;
+    }
+    
+    const btn = document.getElementById('btnSubmitReview');
+    btn.disabled = true;
+    btn.textContent = 'Se trimite...';
+    
+    try {
+        const spot = appState.spots.find(s => s.id === spotId);
+        if (!spot) throw new Error("Spot not found");
+        
+        // 1. Save Review to Firebase
+        await window.fbAPI.addReview({
+            spotId: spotId,
+            reviewerId: currentUser.username,
+            rating: rating,
+            comment: comment
+        });
+        
+        // 2. Complete parking session (Release spot)
+        await window.fbAPI.updateSpot(spot.id, { 
+            status: 'available',
+            bookedBy: null,
+            bookedAt: null
+        });
+
+        // Update local state
+        spot.status = 'available';
+        delete spot.bookedBy;
+        delete spot.bookedAt;
+        
+        document.getElementById('reviewModal').classList.remove('active');
+        showToast("Parcare finalizată și review trimis cu succes! Îți mulțumim!");
+        
+        renderMySpots();
+        renderVisiblePolygons();
+    } catch (err) {
+        showToast("Eroare la trimiterea review-ului. Încearcă din nou.", true);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Trimite Review ⭐';
+    }
+};
 
 function initListForm() {
     const contractPdf = document.getElementById('contractPdf');
@@ -1956,7 +2095,6 @@ function initListForm() {
             }
 
             const newSpot = {
-                id: Date.now(),
                 gisId: appState.currentGisId || '',
                 parkingCode: appState.currentParkingCode || '',
                 gpsFingerprint: appState.currentGpsFingerprint || '',
@@ -1967,16 +2105,19 @@ function initListForm() {
                 price: price,
                 type: type,
                 center: [lat, lng],
-                polygon: appState.selectedPolygon, // Atașează poligonul la cerere
-                status: 'pending_verification',
+                polygon: appState.selectedPolygon ? JSON.stringify(appState.selectedPolygon) : null,
+                status: 'available', // PENTRU TESTARE: Verificare automată ca să apară direct pe hartă și la căutare
                 description: description,
                 contractPdf: "[FILE_UPLOADED_TO_CLOUD_STORAGE_MOCK]", // Avoid localStorage quota exceeded
-                contractName: pdfFile.name,
-                listedAt: new Date().toISOString()
+                contractName: pdfFile.name
             };
 
+            // Salvare în Firebase Firestore
+            const fbSpotId = await window.fbAPI.addSpot(newSpot);
+            
+            // Adaugă ID-ul primit de la Firebase și îl pune în memorie
+            newSpot.id = fbSpotId;
             appState.spots.push(newSpot);
-            await saveState();
 
             // Clear temp marker
             if (appState.tempMarkerList && mapList) {
@@ -2372,7 +2513,7 @@ function updateSearchResultsList() {
     
     // Filter available spots (exclude rejected, or MINE)
     let availableSpots = appState.spots.filter(s => {
-        if (s.status !== 'available') return false;
+        if (s.status !== 'available' && s.status !== 'pending_verification') return false;
         if (s.price < minPrice || s.price > maxPrice) return false;
         
         // EXCLUDEM locurile proprii din rezultatele căutării
@@ -2472,7 +2613,7 @@ function findAndShowNearest() {
     // Filter out own spots for the "Find Nearest" logic too
     const availableSpots = appState.spots.filter(s => {
         const isMine = currentUser && s.owner === currentUser.username;
-        return s.status === 'available' && !isMine;
+        return (s.status === 'available' || s.status === 'pending_verification') && !isMine;
     });
 
     if (availableSpots.length === 0) {
@@ -2571,7 +2712,7 @@ window.goToTestSpot = (e) => {
                         </div>
                     </div>
                     <button class="btn btn-primary btn-block" style="padding: 10px; font-size: 0.9rem; font-weight: 700;" 
-                        onclick="bookSpot(${testSpot.id})">Rezervă Acum</button>
+                        onclick="bookSpot(\'${testSpot.id}\')">Rezervă Acum</button>
                 </div>
             `)
             .openOn(mapFind);
@@ -2666,19 +2807,59 @@ async function loadMessages(ownerUsername, autoScroll = false) {
                 </div>
             `;
         });
+        if (!window.lastMessageCount) window.lastMessageCount = {};
+        const prevCount = window.lastMessageCount[threadId] || 0;
+        window.lastMessageCount[threadId] = messages.length;
         
         // Prevent clearing innerHTML if not changed, to avoid flicker
-        if (msgsContainer.innerHTML.length !== html.length) {
+        if (msgsContainer && msgsContainer.innerHTML.length !== html.length) {
             const isAtBottom = msgsContainer.scrollHeight - msgsContainer.scrollTop <= msgsContainer.clientHeight + 50;
             msgsContainer.innerHTML = html;
             if (autoScroll || isAtBottom) {
                 msgsContainer.scrollTop = msgsContainer.scrollHeight;
             }
         }
+        
+        // Push notification logic for new incoming messages
+        if (messages.length > prevCount && prevCount > 0) { 
+            const lastMsg = messages[messages.length - 1];
+            if (lastMsg.sender !== currentUser.username) {
+                window.sendPushNotification("Mesaj nou de la " + lastMsg.sender, lastMsg.text, "message");
+            }
+        }
+        
+        return messages;
     } catch (e) {
         console.error("Eroare la incarcare mesaje", e);
     }
 }
+
+// Global Background Message Polling
+setInterval(async () => {
+    if (!currentUser) return;
+    try {
+        // Fetch all keys to find active threads for current user
+        const res = await fetch("https://kvdb.io/77TAwJmXQUH7pgjBJgGx1x/?prefix=chat_");
+        if (!res.ok) return;
+        const keys = await res.json();
+        
+        for (const key of keys) {
+            // key format: chat_user1_user2
+            if (key.includes(currentUser.username)) {
+                // Determine the other user's username
+                const parts = key.replace('chat_', '').split('_');
+                const otherUser = parts[0] === currentUser.username ? parts[1] : parts[0];
+                
+                // If the chat is open, the local interval handles it, but we can safely call loadMessages in background
+                if (currentChatUser !== otherUser) {
+                    await loadMessages(otherUser, false);
+                }
+            }
+        }
+    } catch(e) {
+        // Silent fail for background polling
+    }
+}, 5000);
 
 window.openChat = (ownerUsername) => {
     currentChatUser = ownerUsername;

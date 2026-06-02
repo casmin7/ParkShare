@@ -249,6 +249,12 @@
 
         .call-btn-mini-accept {
             background: #22c55e;
+        }        .rating-star.active svg {
+            color: #facc15 !important;
+            fill: #facc15 !important;
+        }
+        .rating-star:hover {
+            transform: scale(1.1);
         }
     </style>
     <!-- Leaflet CSS & Draw CSS & MarkerCluster CSS -->
@@ -264,7 +270,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.min.js" defer></script>
     
     <style>
         /* INLINE CSS TO BYPASS CACHE */
@@ -369,8 +375,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;800&display=swap"
         rel="stylesheet">
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Duplicate removed -->
     <style>
         /* FULLSCREEN CENTERED ONBOARDING */
         .welcome-overlay {
@@ -1490,7 +1495,7 @@
             </div>
             <form id="loginForm" class="profile-form">
                 <div class="form-group" style="margin-bottom: 1rem;">
-                    <label>Username / Email</label>
+                    <label>Email / Telefon</label>
                     <input type="text" id="loginContact" required placeholder="utilizator">
                 </div>
                 <div class="form-group" style="margin-bottom: 1.5rem;">
@@ -1604,6 +1609,40 @@
                 
                 <button class="btn btn-primary btn-block" style="background: #ef4444; border-color: #ef4444; padding: 1rem; font-weight: 700;" onclick="submitIncidentReport()" id="btnSubmitIncident">
                     Trimite Alertă la Poliția Locală
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Modal -->
+    <div id="reviewModal" class="modal-overlay">
+        <div class="modal-card glass-card" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3>Cum a fost parcarea?</h3>
+                <button class="btn-icon" onclick="document.getElementById('reviewModal').classList.remove('active')"><i data-lucide="x"></i></button>
+            </div>
+            <div style="padding: 1.5rem; text-align: center;">
+                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Oferă un rating locului de parcare <strong id="reviewSpotName" style="color: var(--text-color);"></strong></p>
+                
+                <div id="starRatingContainer" style="display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem;">
+                    <span class="rating-star" data-value="1" style="cursor: pointer; display: inline-block; transition: all 0.2s;"><i data-lucide="star" style="width: 32px; height: 32px; color: var(--text-muted); pointer-events: none;"></i></span>
+                    <span class="rating-star" data-value="2" style="cursor: pointer; display: inline-block; transition: all 0.2s;"><i data-lucide="star" style="width: 32px; height: 32px; color: var(--text-muted); pointer-events: none;"></i></span>
+                    <span class="rating-star" data-value="3" style="cursor: pointer; display: inline-block; transition: all 0.2s;"><i data-lucide="star" style="width: 32px; height: 32px; color: var(--text-muted); pointer-events: none;"></i></span>
+                    <span class="rating-star" data-value="4" style="cursor: pointer; display: inline-block; transition: all 0.2s;"><i data-lucide="star" style="width: 32px; height: 32px; color: var(--text-muted); pointer-events: none;"></i></span>
+                    <span class="rating-star" data-value="5" style="cursor: pointer; display: inline-block; transition: all 0.2s;"><i data-lucide="star" style="width: 32px; height: 32px; color: var(--text-muted); pointer-events: none;"></i></span>
+                </div>
+                
+                <div class="form-group" style="text-align: left;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--text-color);">Comentariu scurt (Opțional)</label>
+                    <textarea id="reviewComment" class="input-glass" rows="4" style="width: 100%; resize: none; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); color: white; padding: 0.75rem; border-radius: 8px;" placeholder="Ex: Proprietar de treabă, locul a fost perfect..."></textarea>
+                </div>
+                
+                <input type="hidden" id="reviewSpotId" value="">
+                <input type="hidden" id="reviewOwnerId" value="">
+                <input type="hidden" id="reviewSelectedRating" value="0">
+                
+                <button class="btn btn-primary btn-block" style="margin-top: 1.5rem; font-weight: 700; padding: 1rem;" onclick="submitReview()" id="btnSubmitReview">
+                    Trimite Review ⭐
                 </button>
             </div>
         </div>
@@ -2015,8 +2054,9 @@
         </div>
     </footer>
     <!-- Our scripts -->
-    <script src="s4_points_nominatim.js"></script>
-    <script src="app.js?v=41" defer></script>
+    <!-- Firebase SDK (ES Module) -->
+    <script type="module" src="firebase.js" async></script>
+    <script src="app.js?v=42" defer></script>
     <script>
         // Fail-safe icon rendering
         document.addEventListener('DOMContentLoaded', () => {
@@ -2041,6 +2081,17 @@
         setInterval(() => {
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }, 1000);
+
+        // Register Service Worker for Push Notifications & Offline capabilities
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(registration => {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                }, err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
     </script>
 </body>
 
